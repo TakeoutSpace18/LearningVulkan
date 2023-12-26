@@ -8,7 +8,8 @@
 #include <vulkan/vulkan.hpp>
 
 
-class VulkanApp {
+class VulkanApp
+{
 public:
     void run();
 
@@ -16,6 +17,15 @@ public:
     const int HEIGHT = 400;
 
 private:
+    static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
+        VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+        VkDebugUtilsMessageTypeFlagsEXT messageType,
+        const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+        void* pUserData);
+
+    bool checkValidationLayerSupport();
+
+    void populateDebugMessengerCreateInfo(vk::DebugUtilsMessengerCreateInfoEXT& createInfo);
 
     void createInstance();
 
@@ -29,8 +39,17 @@ private:
 
     GLFWwindow* m_window;
     vk::Instance m_vk_instance;
-};
 
+    const std::vector<const char *> m_validation_layers = {
+        "VK_LAYER_KHRONOS_validation"
+    };
+
+#ifdef NDEBUG
+    static constexpr bool m_enable_validation_layers = false;
+#else
+    static constexpr bool m_enable_validation_layers = true;
+#endif
+};
 
 
 #endif //VULKANAPP_H
