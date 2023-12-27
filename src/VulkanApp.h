@@ -29,6 +29,14 @@ private:
 
     void createInstance();
 
+    void logSupportedInstanceExtensions();
+
+    bool isDescreteGPU(const vk::PhysicalDevice& device);
+
+    static void logAvailablePhysicalDevices(const std::vector<vk::PhysicalDevice>& devices);
+
+    void pickPhysicalDevice();
+
     void initVulkan();
 
     void initWindow();
@@ -37,8 +45,9 @@ private:
 
     void cleanup();
 
-    GLFWwindow* m_window;
-    vk::Instance m_vk_instance;
+    GLFWwindow* m_window = nullptr;
+    vk::Instance m_vk_instance = VK_NULL_HANDLE;
+    vk::PhysicalDevice m_physical_device = VK_NULL_HANDLE;
 
     const std::vector<const char *> m_validation_layers = {
         "VK_LAYER_KHRONOS_validation"

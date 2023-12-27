@@ -1,6 +1,6 @@
 #include "VulkanApp.h"
 
-#include <fmt/printf.h>
+#include <spdlog/spdlog.h>
 
 #define VULKAN_HPP_NO_CONSTRUCTORS
 #include <vulkan/vulkan.hpp>
@@ -18,8 +18,23 @@ VkBool32 VulkanApp::debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT message
                                   const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
                                   void* pUserData)
 {
-    fmt::print(stderr, "validation layer: {}\n", pCallbackData->pMessage);
-
+    switch (messageSeverity)
+    {
+        case (VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT):
+            spdlog::warn("validation layer: {}", pCallbackData->pMessage);
+            break;
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
+            spdlog::debug("validation layer: {}", pCallbackData->pMessage);
+            break;
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
+            spdlog::info("validation layer: {}", pCallbackData->pMessage);
+            break;
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
+            spdlog::error("validation layer: {}", pCallbackData->pMessage);
+            break;
+        default:
+            spdlog::error("Unknown severity flag in VK debug callback!");
+    }
     return VK_FALSE;
 }
 
@@ -107,21 +122,69 @@ void VulkanApp::createInstance()
     m_vk_instance = vk::createInstance(create_info);
 }
 
+void VulkanApp::logSupportedInstanceExtensions()
+{
+    spdlog::info("supported instance extensions:");
+    for (auto ext_props : vk::enumerateInstanceExtensionProperties())
+    {
+        spdlog::info("{}: version {}", ext_props.extensionName, ext_props.specVersion);
+    }
+}
+
+bool VulkanApp::isDescreteGPU(const vk::PhysicalDevice& device)
+{
+    const auto device_properties = device.getProperties();
+    return device_properties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu;
+}
+
+void VulkanApp::logAvailablePhysicalDevices(const std::vector<vk::PhysicalDevice>& devices)
+{
+    spdlog::info("Available physical devices:");
+    int number = 0;
+    for (const auto& dev : devices)
+    {
+        auto device_properties = dev.getProperties();
+        spdlog::info("{}) {}, ID: {}", number, device_properties.deviceName, device_properties.deviceID);
+        ++number;
+    }
+}
+
+void VulkanApp::pickPhysicalDevice()
+{
+    auto devices = m_vk_instance.enumeratePhysicalDevices();
+    if (devices.empty())
+    {
+        throw std::runtime_error("Failed to find GPUs with Vulkan support!");
+    }
+
+    logAvailablePhysicalDevices(devices);
+
+    // pick discrete gpu on the first hand
+    for (const auto& dev : devices)
+    {
+        if (isDescreteGPU(dev))
+        {
+            spdlog::info("Picked descrete GPU {}", dev.getProperties().deviceName);
+            m_physical_device = dev;
+            return;
+        }
+    }
+    // pick any if no descrete is available
+    m_physical_device = devices[0];
+    spdlog::warn("Descrete GPU not found! Picked {}", m_physical_device.getProperties().deviceName);
+}
+
 void VulkanApp::initVulkan()
 {
     createInstance();
-
-    fmt::print(stderr, "supported instance extensions:\n");
-    for (auto ext_props : vk::enumerateInstanceExtensionProperties())
-    {
-        fmt::print(stderr, "{}: version {}\n", ext_props.extensionName, ext_props.specVersion);
-    }
+    logSupportedInstanceExtensions();
+    pickPhysicalDevice();
 }
 
 void VulkanApp::initWindow()
 {
     glfwSetErrorCallback([](int code, const char* desc) {
-        fmt::print("GLFW Error {}: {}", code, desc);
+        spdlog::error("GLFW Error {}: {}", code, desc);
     });
 
     glfwInit();
