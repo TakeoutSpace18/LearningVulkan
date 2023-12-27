@@ -5,8 +5,15 @@
 #include <GLFW/glfw3.h>
 
 #define VULKAN_HPP_NO_CONSTRUCTORS
+#include <optional>
 #include <vulkan/vulkan.hpp>
 
+
+struct QueueFamilyIndices {
+    std::optional<std::uint32_t> graphicsFamily;
+
+    [[nodiscard]] bool isComplete() const;
+};
 
 class VulkanApp
 {
@@ -29,13 +36,19 @@ private:
 
     void createInstance();
 
-    void logSupportedInstanceExtensions();
+    static void logSupportedInstanceExtensions();
 
-    bool isDescreteGPU(const vk::PhysicalDevice& device);
+    static bool isDescreteGPU(const vk::PhysicalDevice& device);
 
     static void logAvailablePhysicalDevices(const std::vector<vk::PhysicalDevice>& devices);
 
+    bool isDeviceSuitable(const vk::PhysicalDevice& device);
+
     void pickPhysicalDevice();
+
+    QueueFamilyIndices findQueueFamilies(const vk::PhysicalDevice& device);
+
+    void createLogicalDevice();
 
     void initVulkan();
 
@@ -48,6 +61,8 @@ private:
     GLFWwindow* m_window = nullptr;
     vk::Instance m_vk_instance = VK_NULL_HANDLE;
     vk::PhysicalDevice m_physical_device = VK_NULL_HANDLE;
+    vk::Device m_logical_device = VK_NULL_HANDLE;
+    vk::Queue m_graphics_queue = VK_NULL_HANDLE;
 
     const std::vector<const char *> m_validation_layers = {
         "VK_LAYER_KHRONOS_validation"
@@ -59,6 +74,5 @@ private:
     static constexpr bool m_enable_validation_layers = true;
 #endif
 };
-
 
 #endif //VULKANAPP_H
