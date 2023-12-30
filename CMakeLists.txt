@@ -13,5 +13,7 @@ add_executable(VulkanApp src/main.cpp
         src/VulkanApp.h
         src/QueueFamilyIndices.h
         src/QueueFamilyIndices.cpp
+        src/SwapChainSupportDetails.h
+        src/SwapChainSupportDetails.cpp
 )
 target_link_libraries(VulkanApp Vulkan::Vulkan glfw fmt spdlog)

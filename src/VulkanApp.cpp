@@ -145,14 +145,25 @@ void VulkanApp::logAvailablePhysicalDevices(const std::vector<vk::PhysicalDevice
     }
 }
 
-bool VulkanApp::isDeviceSuitable(const vk::PhysicalDevice& device)
+bool VulkanApp::checkExtensionsSupport(const vk::PhysicalDevice& device)
 {
-    if (!findQueueFamilies(device).isComplete())
+    std::set<std::string> requiredExtensions(m_device_extensions.begin(), m_device_extensions.end());
+
+    for (const auto deviceExtensionProperties : device.enumerateDeviceExtensionProperties())
     {
-        return false;
+        requiredExtensions.erase(deviceExtensionProperties.extensionName);
     }
 
-    return true;
+    return requiredExtensions.empty();
+}
+
+bool VulkanApp::isDeviceSuitable(const vk::PhysicalDevice& device)
+{
+    const auto indices = QueueFamilyIndices::FindQueueFamilies(device, m_surface_khr);
+    const bool extensionsSupported = checkExtensionsSupport(device);
+    const auto swapChainSupportDetails = SwapChainSupportDetails::QuerySwapChainSupport(device, m_surface_khr);
+
+    return indices.isComplete() && extensionsSupported && swapChainSupportDetails.isAdequate();
 }
 
 void VulkanApp::pickPhysicalDevice()

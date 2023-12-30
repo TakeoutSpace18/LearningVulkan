@@ -5,7 +5,6 @@
 #include <GLFW/glfw3.h>
 
 #define VULKAN_HPP_NO_CONSTRUCTORS
-#include <optional>
 #include <vulkan/vulkan.hpp>
 
 
@@ -36,6 +35,8 @@ private:
 
     static void logAvailablePhysicalDevices(const std::vector<vk::PhysicalDevice>& devices);
 
+    bool checkExtensionsSupport(const vk::PhysicalDevice& device);
+
     bool isDeviceSuitable(const vk::PhysicalDevice& device);
 
     void pickPhysicalDevice();
@@ -62,6 +63,10 @@ private:
 
     const std::vector<const char *> m_validation_layers = {
         "VK_LAYER_KHRONOS_validation"
+    };
+
+    const std::vector<const char *> m_device_extensions = {
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME
     };
 
 #ifdef NDEBUG
