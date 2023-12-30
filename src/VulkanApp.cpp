@@ -9,6 +9,9 @@
 
 #include <spdlog/spdlog.h>
 
+#include "QueueFamilyIndices.h"
+#include "SwapChainSupportDetails.h"
+
 void VulkanApp::run()
 {
     initWindow();
@@ -44,25 +47,14 @@ VkBool32 VulkanApp::debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT message
 
 bool VulkanApp::checkValidationLayerSupport()
 {
-    for (const char* layerName : m_validation_layers)
+    std::set<std::string> requiredLayers(m_validation_layers.begin(), m_validation_layers.end());
+
+    for (const auto& instanceLayerProperties : vk::enumerateInstanceLayerProperties())
     {
-        bool layerFound = false;
-
-        for (const auto& layer_properties : vk::enumerateInstanceLayerProperties())
-        {
-            if (strcmp(layerName, layer_properties.layerName) == 0)
-            {
-                layerFound = true;
-                break;
-            }
-        }
-
-        if (!layerFound)
-        {
-            return false;
-        }
+        requiredLayers.erase(instanceLayerProperties.layerName);
     }
-    return true;
+
+    return requiredLayers.empty();
 }
 
 void VulkanApp::populateDebugMessengerCreateInfo(vk::DebugUtilsMessengerCreateInfoEXT& createInfo)
@@ -165,7 +157,7 @@ bool VulkanApp::isDeviceSuitable(const vk::PhysicalDevice& device)
 
 void VulkanApp::pickPhysicalDevice()
 {
-    auto devices = m_vk_instance.enumeratePhysicalDevices();
+    const auto devices = m_vk_instance.enumeratePhysicalDevices();
     if (devices.empty())
     {
         throw std::runtime_error("Failed to find GPUs with Vulkan support!");
@@ -194,48 +186,21 @@ void VulkanApp::pickPhysicalDevice()
             return;
         }
     }
-}
 
-QueueFamilyIndices VulkanApp::findQueueFamilies(const vk::PhysicalDevice& device)
-{
-    QueueFamilyIndices indices;
-    std::uint32_t i = 0;
-    for (const auto family : device.getQueueFamilyProperties())
-    {
-        if (indices.isComplete()) break;
-
-        if (family.queueFlags & vk::QueueFlagBits::eGraphics)
-        {
-            indices.graphicsFamily = i;
-        }
-
-        vk::Bool32 presentSupport = false;
-        const vk::Result result = device.getSurfaceSupportKHR(i, m_surface_khr, &presentSupport);
-        vk::resultCheck(result, "Failed to check physical device present support!");
-
-        if (presentSupport)
-        {
-            indices.presentFamily = i;
-        }
-
-        ++i;
-    }
-    return indices;
+    throw std::runtime_error("Can't find suitable GPU!");
 }
 
 void VulkanApp::createLogicalDevice()
 {
-    QueueFamilyIndices indices = findQueueFamilies(m_physical_device);
+    const auto indices = QueueFamilyIndices::FindQueueFamilies(m_physical_device, m_surface_khr);
 
     std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
-    std::set<uint32_t> uniqueQueueFamilies = {
-        indices.graphicsFamily.value(),
-        indices.presentFamily.value()
-    };
+    std::set uniqueQueueFamilies = indices.getUniqueIndices();
 
     float queuePriority = 1.0f;
-    for (uint32_t queueFamily : uniqueQueueFamilies) {
-        vk::DeviceQueueCreateInfo queueCreateInfo {
+    for (uint32_t queueFamily : uniqueQueueFamilies)
+    {
+        vk::DeviceQueueCreateInfo queueCreateInfo{
             .sType = vk::StructureType::eDeviceQueueCreateInfo,
             .queueFamilyIndex = queueFamily,
             .queueCount = 1,
@@ -248,8 +213,10 @@ void VulkanApp::createLogicalDevice()
 
     vk::DeviceCreateInfo deviceCreateInfo = {
         .sType = vk::StructureType::eDeviceCreateInfo,
-        .queueCreateInfoCount = queueCreateInfos.size(),
+        .queueCreateInfoCount = static_cast<std::uint32_t>(queueCreateInfos.size()),
         .pQueueCreateInfos = queueCreateInfos.data(),
+        .enabledExtensionCount = static_cast<uint32_t>(m_device_extensions.size()),
+        .ppEnabledExtensionNames = m_device_extensions.data(),
         .pEnabledFeatures = &deviceFeatures
     };
 
@@ -264,6 +231,7 @@ void VulkanApp::createLogicalDevice()
     }
 
     m_logical_device = m_physical_device.createDevice(deviceCreateInfo);
+
     m_graphics_queue = m_logical_device.getQueue(indices.graphicsFamily.value(), 0);
     m_present_queue = m_logical_device.getQueue(indices.presentFamily.value(), 0);
 }
@@ -314,9 +282,4 @@ void VulkanApp::cleanup()
     m_vk_instance.destroy();
     glfwDestroyWindow(m_window);
     glfwTerminate();
-}
-
-bool QueueFamilyIndices::isComplete() const
-{
-    return graphicsFamily.has_value() && presentFamily.has_value();
 }

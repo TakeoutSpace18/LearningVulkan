@@ -11,5 +11,7 @@ find_package(fmt REQUIRED)
 add_executable(VulkanApp src/main.cpp
         src/VulkanApp.cpp
         src/VulkanApp.h
+        src/QueueFamilyIndices.h
+        src/QueueFamilyIndices.cpp
 )
 target_link_libraries(VulkanApp Vulkan::Vulkan glfw fmt spdlog)

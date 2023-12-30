@@ -9,13 +9,6 @@
 #include <vulkan/vulkan.hpp>
 
 
-struct QueueFamilyIndices {
-    std::optional<std::uint32_t> graphicsFamily;
-    std::optional<std::uint32_t> presentFamily;
-
-    [[nodiscard]] bool isComplete() const;
-};
-
 class VulkanApp
 {
 public:
@@ -46,8 +39,6 @@ private:
     bool isDeviceSuitable(const vk::PhysicalDevice& device);
 
     void pickPhysicalDevice();
-
-    QueueFamilyIndices findQueueFamilies(const vk::PhysicalDevice& device);
 
     void createLogicalDevice();
 
