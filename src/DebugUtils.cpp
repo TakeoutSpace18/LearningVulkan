@@ -13,16 +13,16 @@ VkBool32 DebugUtils::debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messag
     switch (messageSeverity)
     {
         case (VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT):
-            spdlog::warn("validation layer: {}", pCallbackData->pMessage);
+            spdlog::warn(pCallbackData->pMessage);
             break;
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
-            spdlog::debug("validation layer: {}", pCallbackData->pMessage);
+            spdlog::debug(pCallbackData->pMessage);
             break;
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-            spdlog::info("validation layer: {}", pCallbackData->pMessage);
+            spdlog::info(pCallbackData->pMessage);
             break;
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-            spdlog::error("validation layer: {}", pCallbackData->pMessage);
+            spdlog::error(pCallbackData->pMessage);
             break;
         default:
             spdlog::error("Unknown severity flag in VK debug callback!");

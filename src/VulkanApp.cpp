@@ -72,7 +72,7 @@ void VulkanApp::createInstance()
     createInfo.enabledLayerCount = enabledLayers.size();
     createInfo.ppEnabledLayerNames = enabledLayers.data();
 
-    m_vk_instance = vk::createInstance(createInfo);
+    m_instance = vk::createInstance(createInfo);
 }
 
 void VulkanApp::logSupportedInstanceExtensions()
@@ -116,16 +116,16 @@ bool VulkanApp::checkDeviceExtensionsSupport(const vk::PhysicalDevice& device)
 
 bool VulkanApp::isDeviceSuitable(const vk::PhysicalDevice& device)
 {
-    const auto indices = QueueFamilyIndices::FindQueueFamilies(device, m_surface_khr);
+    const auto indices = QueueFamilyIndices::FindQueueFamilies(device, m_surface);
     const bool extensionsSupported = checkDeviceExtensionsSupport(device);
-    const auto swapChainSupportDetails = SwapChainSupportDetails::QuerySwapChainSupport(device, m_surface_khr);
+    const auto swapChainSupportDetails = SwapChainSupportDetails::QuerySwapChainSupport(device, m_surface);
 
     return indices.isComplete() && extensionsSupported && swapChainSupportDetails.isAdequate();
 }
 
 void VulkanApp::pickPhysicalDevice()
 {
-    const auto devices = m_vk_instance.enumeratePhysicalDevices();
+    const auto devices = m_instance.enumeratePhysicalDevices();
     if (devices.empty())
     {
         throw std::runtime_error("Failed to find GPUs with Vulkan support!");
@@ -139,7 +139,7 @@ void VulkanApp::pickPhysicalDevice()
         if (isDescreteGPU(dev) && isDeviceSuitable(dev))
         {
             spdlog::info("Picked descrete GPU {}", dev.getProperties().deviceName);
-            m_physical_device = dev;
+            m_physicalDevice = dev;
             return;
         }
     }
@@ -150,7 +150,7 @@ void VulkanApp::pickPhysicalDevice()
         if (isDeviceSuitable(dev))
         {
             spdlog::warn("Descrete GPU not found! Picked {}", dev.getProperties().deviceName);
-            m_physical_device = dev;
+            m_physicalDevice = dev;
             return;
         }
     }
@@ -160,7 +160,7 @@ void VulkanApp::pickPhysicalDevice()
 
 void VulkanApp::createLogicalDevice()
 {
-    const auto indices = QueueFamilyIndices::FindQueueFamilies(m_physical_device, m_surface_khr);
+    const auto indices = QueueFamilyIndices::FindQueueFamilies(m_physicalDevice, m_surface);
 
     std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
     std::set uniqueQueueFamilies = indices.getUniqueIndices();
@@ -194,25 +194,25 @@ void VulkanApp::createLogicalDevice()
     deviceCreateInfo.enabledLayerCount = enabledLayers.size();
     deviceCreateInfo.ppEnabledLayerNames = enabledLayers.data();
 
-    m_logical_device = m_physical_device.createDevice(deviceCreateInfo);
+    m_logicalDevice = m_physicalDevice.createDevice(deviceCreateInfo);
 
-    m_graphics_queue = m_logical_device.getQueue(indices.graphicsFamily.value(), 0);
-    m_present_queue = m_logical_device.getQueue(indices.presentFamily.value(), 0);
+    m_graphicsQueue = m_logicalDevice.getQueue(indices.graphicsFamily.value(), 0);
+    m_presentQueue = m_logicalDevice.getQueue(indices.presentFamily.value(), 0);
 }
 
 void VulkanApp::createSurface()
 {
-    auto surf = static_cast<VkSurfaceKHR>(m_surface_khr);
-    if (glfwCreateWindowSurface(m_vk_instance, m_window, nullptr, &surf) != VK_SUCCESS)
+    auto surf = static_cast<VkSurfaceKHR>(m_surface);
+    if (glfwCreateWindowSurface(m_instance, m_window, nullptr, &surf) != VK_SUCCESS)
     {
         throw std::runtime_error("Can't create window surface!");
     }
-    m_surface_khr = surf;
+    m_surface = surf;
 }
 
 void VulkanApp::createSwapChain()
 {
-    auto swapChainSupportDetails = SwapChainSupportDetails::QuerySwapChainSupport(m_physical_device, m_surface_khr);
+    auto swapChainSupportDetails = SwapChainSupportDetails::QuerySwapChainSupport(m_physicalDevice, m_surface);
 
     vk::SurfaceFormatKHR surfaceFormat = swapChainSupportDetails.chooseSurfaceFormat();
     vk::PresentModeKHR presentMode = swapChainSupportDetails.choosePresentMode();
@@ -224,7 +224,7 @@ void VulkanApp::createSwapChain()
         .sType = vk::StructureType::eSwapchainCreateInfoKHR,
         .pNext = nullptr,
         .flags = {},
-        .surface = m_surface_khr,
+        .surface = m_surface,
         .minImageCount = imageCount,
         .imageFormat = surfaceFormat.format,
         .imageColorSpace = surfaceFormat.colorSpace,
@@ -239,7 +239,7 @@ void VulkanApp::createSwapChain()
         .oldSwapchain = VK_NULL_HANDLE
     };
 
-    QueueFamilyIndices indices = QueueFamilyIndices::FindQueueFamilies(m_physical_device, m_surface_khr);
+    QueueFamilyIndices indices = QueueFamilyIndices::FindQueueFamilies(m_physicalDevice, m_surface);
     uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
 
     if (indices.graphicsFamily != indices.presentFamily)
@@ -257,22 +257,58 @@ void VulkanApp::createSwapChain()
         swapChainCreateInfo.pQueueFamilyIndices = nullptr;
     }
 
-    m_swap_chain = m_logical_device.createSwapchainKHR(swapChainCreateInfo);
+    m_swapChain = m_logicalDevice.createSwapchainKHR(swapChainCreateInfo);
 
-    m_swap_chain_images = m_logical_device.getSwapchainImagesKHR(m_swap_chain);
-    m_swap_chain_image_format = surfaceFormat.format;
-    m_swap_chain_extent = extent;
+    m_swapChainImages = m_logicalDevice.getSwapchainImagesKHR(m_swapChain);
+    m_swapChainImageFormat = surfaceFormat.format;
+    m_swapChainExtent = extent;
+}
+
+void VulkanApp::createImageViews()
+{
+    m_swapChainImageViews.resize(m_swapChainImages.size());
+    for (std::size_t i = 0; i < m_swapChainImages.size(); ++i)
+    {
+        const vk::ComponentMapping componentMapping = {
+            .r = vk::ComponentSwizzle::eIdentity,
+            .g = vk::ComponentSwizzle::eIdentity,
+            .b = vk::ComponentSwizzle::eIdentity,
+            .a = vk::ComponentSwizzle::eIdentity
+        };
+
+        const vk::ImageSubresourceRange imageSubresourceRange = {
+            .aspectMask = vk::ImageAspectFlagBits::eColor,
+            .baseMipLevel = 0,
+            .levelCount = 1,
+            .baseArrayLayer = 0,
+            .layerCount = 1
+        };
+
+        const vk::ImageViewCreateInfo createInfo = {
+            .sType = vk::StructureType::eImageViewCreateInfo,
+            .pNext = nullptr,
+            .flags = {},
+            .image = m_swapChainImages[i],
+            .viewType = vk::ImageViewType::e2D,
+            .format = m_swapChainImageFormat,
+            .components = componentMapping,
+            .subresourceRange = imageSubresourceRange
+        };
+
+        m_swapChainImageViews[i] = m_logicalDevice.createImageView(createInfo);
+    }
 }
 
 void VulkanApp::initVulkan()
 {
     createInstance();
-    DebugUtils::SetupDebugMessenger(m_vk_instance);
+    DebugUtils::SetupDebugMessenger(m_instance);
     logSupportedInstanceExtensions();
     createSurface();
     pickPhysicalDevice();
     createLogicalDevice();
     createSwapChain();
+    createImageViews();
 }
 
 void VulkanApp::initWindow()
@@ -297,11 +333,15 @@ void VulkanApp::mainLoop()
 
 void VulkanApp::cleanup()
 {
-    DebugUtils::Cleanup(m_vk_instance);
-    m_logical_device.destroySwapchainKHR(m_swap_chain);
-    m_logical_device.destroy();
-    m_vk_instance.destroySurfaceKHR(m_surface_khr);
-    m_vk_instance.destroy();
+    DebugUtils::Cleanup(m_instance);
+    for (const auto& imageView : m_swapChainImageViews)
+    {
+        m_logicalDevice.destroyImageView(imageView);
+    }
+    m_logicalDevice.destroySwapchainKHR(m_swapChain);
+    m_logicalDevice.destroy();
+    m_instance.destroySurfaceKHR(m_surface);
+    m_instance.destroy();
     glfwDestroyWindow(m_window);
     glfwTerminate();
 }
