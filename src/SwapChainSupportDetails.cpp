@@ -65,6 +65,27 @@ vk::Extent2D SwapChainSupportDetails::chooseExtent(GLFWwindow* window) const
     return actualExtent;
 }
 
+std::uint32_t SwapChainSupportDetails::chooseImageCount() const
+{
+    // requesting exact minimum may sometimes cause us to wait on the driver
+    // to complete internal operations before we can acquire another image to render to.
+    // So we request one more image.
+    std::uint32_t imageCount = m_capabilities.minImageCount + 1;
+
+    // zero value indicates that there is no maximum
+    if (m_capabilities.maxImageCount > 0 && imageCount > m_capabilities.maxImageCount)
+    {
+        imageCount = m_capabilities.maxImageCount;
+    }
+
+    return imageCount;
+}
+
+vk::SurfaceCapabilitiesKHR SwapChainSupportDetails::capabilities() const
+{
+    return m_capabilities;
+}
+
 SwapChainSupportDetails SwapChainSupportDetails::QuerySwapChainSupport(const vk::PhysicalDevice& device,
                                                                        const vk::SurfaceKHR& surface)
 {

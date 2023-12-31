@@ -257,6 +257,59 @@ void VulkanApp::createSurface()
     m_surface_khr = surf;
 }
 
+void VulkanApp::createSwapChain()
+{
+    auto swapChainSupportDetails = SwapChainSupportDetails::QuerySwapChainSupport(m_physical_device, m_surface_khr);
+
+    vk::SurfaceFormatKHR surfaceFormat = swapChainSupportDetails.chooseSurfaceFormat();
+    vk::PresentModeKHR presentMode = swapChainSupportDetails.choosePresentMode();
+    vk::Extent2D extent = swapChainSupportDetails.chooseExtent(m_window);
+    vk::SurfaceCapabilitiesKHR capabilities = swapChainSupportDetails.capabilities();
+    std::uint32_t imageCount = swapChainSupportDetails.chooseImageCount();
+
+    vk::SwapchainCreateInfoKHR swapChainCreateInfo = {
+        .sType = vk::StructureType::eSwapchainCreateInfoKHR,
+        .pNext = nullptr,
+        .flags = {},
+        .surface = m_surface_khr,
+        .minImageCount = imageCount,
+        .imageFormat = surfaceFormat.format,
+        .imageColorSpace = surfaceFormat.colorSpace,
+        .imageExtent = extent,
+        .imageArrayLayers = 1, // this value is always 1 unless we are developing stereoscopic 3D application
+        .imageUsage = vk::ImageUsageFlagBits::eColorAttachment,
+        .preTransform = capabilities.currentTransform,
+        .compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque, // opaque, because we don't need blending with other windows
+        .presentMode = presentMode,
+        .clipped = VK_TRUE,
+        .oldSwapchain = VK_NULL_HANDLE
+    };
+
+    QueueFamilyIndices indices = QueueFamilyIndices::FindQueueFamilies(m_physical_device, m_surface_khr);
+    uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
+
+    if (indices.graphicsFamily != indices.presentFamily)
+    {
+        swapChainCreateInfo.imageSharingMode = vk::SharingMode::eConcurrent;
+        // specify between which queue families ownership will be transfered
+        swapChainCreateInfo.queueFamilyIndexCount = 2;
+        swapChainCreateInfo.pQueueFamilyIndices = queueFamilyIndices;
+    }
+    else
+    {
+        // Exclusive mode offers better perfomance, but requires explicit ownership transfer when using multiple queue families
+        swapChainCreateInfo.imageSharingMode = vk::SharingMode::eExclusive;
+        swapChainCreateInfo.queueFamilyIndexCount = 0;
+        swapChainCreateInfo.pQueueFamilyIndices = nullptr;
+    }
+
+    m_swap_chain = m_logical_device.createSwapchainKHR(swapChainCreateInfo);
+
+    m_swap_chain_images = m_logical_device.getSwapchainImagesKHR(m_swap_chain);
+    m_swap_chain_image_format = surfaceFormat.format;
+    m_swap_chain_extent = extent;
+}
+
 void VulkanApp::initVulkan()
 {
     createInstance();
@@ -264,6 +317,7 @@ void VulkanApp::initVulkan()
     createSurface();
     pickPhysicalDevice();
     createLogicalDevice();
+    createSwapChain();
 }
 
 void VulkanApp::initWindow()
@@ -288,6 +342,7 @@ void VulkanApp::mainLoop()
 
 void VulkanApp::cleanup()
 {
+    m_logical_device.destroySwapchainKHR(m_swap_chain);
     m_logical_device.destroy();
     m_vk_instance.destroySurfaceKHR(m_surface_khr);
     m_vk_instance.destroy();
