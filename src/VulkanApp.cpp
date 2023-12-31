@@ -4,11 +4,12 @@
 #include <GLFW/glfw3.h>
 
 #define VULKAN_HPP_NO_CONSTRUCTORS
-#include <set>
 #include <vulkan/vulkan.hpp>
 
+#include <set>
 #include <spdlog/spdlog.h>
 
+#include "DebugUtils.h"
 #include "QueueFamilyIndices.h"
 #include "SwapChainSupportDetails.h"
 
@@ -20,65 +21,21 @@ void VulkanApp::run()
     cleanup();
 }
 
-VkBool32 VulkanApp::debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-                                  VkDebugUtilsMessageTypeFlagsEXT messageType,
-                                  const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-                                  void* pUserData)
+std::vector<const char *> VulkanApp::getRequiredInstanceExtensions()
 {
-    switch (messageSeverity)
-    {
-        case (VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT):
-            spdlog::warn("validation layer: {}", pCallbackData->pMessage);
-            break;
-        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
-            spdlog::debug("validation layer: {}", pCallbackData->pMessage);
-            break;
-        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-            spdlog::info("validation layer: {}", pCallbackData->pMessage);
-            break;
-        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-            spdlog::error("validation layer: {}", pCallbackData->pMessage);
-            break;
-        default:
-            spdlog::error("Unknown severity flag in VK debug callback!");
-    }
-    return VK_FALSE;
-}
+    uint32_t glfwExtensionCount = 0;
+    const char** glfwExtensions;
+    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
-bool VulkanApp::checkValidationLayerSupport()
-{
-    std::set<std::string> requiredLayers(m_validation_layers.begin(), m_validation_layers.end());
+    std::vector extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
-    for (const auto& instanceLayerProperties : vk::enumerateInstanceLayerProperties())
-    {
-        requiredLayers.erase(instanceLayerProperties.layerName);
-    }
+    DebugUtils::AppendRequiredInstanceExtensions(extensions);
 
-    return requiredLayers.empty();
-}
-
-void VulkanApp::populateDebugMessengerCreateInfo(vk::DebugUtilsMessengerCreateInfoEXT& createInfo)
-{
-    createInfo = vk::DebugUtilsMessengerCreateInfoEXT{};
-    createInfo.sType = vk::StructureType::eDebugUtilsMessengerCreateInfoEXT;
-    createInfo.messageSeverity = vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose |
-                                 vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning |
-                                 vk::DebugUtilsMessageSeverityFlagBitsEXT::eError |
-                                 vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo;
-    createInfo.messageType = vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral |
-                             vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation |
-                             vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance |
-                             vk::DebugUtilsMessageTypeFlagBitsEXT::eDeviceAddressBinding;
-    createInfo.pfnUserCallback = debugCallback;
+    return extensions;
 }
 
 void VulkanApp::createInstance()
 {
-    if (m_enable_validation_layers && !checkValidationLayerSupport())
-    {
-        throw std::runtime_error("validation layers requested, but not available!");
-    }
-
     vk::ApplicationInfo appInfo = {
         .sType = vk::StructureType::eApplicationInfo,
         .pNext = nullptr,
@@ -89,31 +46,31 @@ void VulkanApp::createInstance()
         .apiVersion = VK_API_VERSION_1_3
     };
 
-    std::uint32_t glfwExtensionCount = 0;
-    const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+    auto extensions = getRequiredInstanceExtensions();
 
     vk::InstanceCreateInfo createInfo = {
         .sType = vk::StructureType::eInstanceCreateInfo,
         .pNext = nullptr,
         .pApplicationInfo = &appInfo,
-        .enabledExtensionCount = glfwExtensionCount,
-        .ppEnabledExtensionNames = glfwExtensions
+        .enabledExtensionCount = static_cast<std::uint32_t>(extensions.size()),
+        .ppEnabledExtensionNames = extensions.data()
     };
 
     vk::DebugUtilsMessengerCreateInfoEXT debugCreateInfo;
-    if constexpr (m_enable_validation_layers)
+    if constexpr (DebugUtils::ValidationLayersEnabled())
     {
-        populateDebugMessengerCreateInfo(debugCreateInfo);
-
-        createInfo.enabledLayerCount = m_validation_layers.size();
-        createInfo.ppEnabledLayerNames = m_validation_layers.data();
+        DebugUtils::PopulateDebugMessengerCreateInfo(debugCreateInfo);
         createInfo.pNext = &debugCreateInfo;
     }
     else
     {
-        createInfo.enabledLayerCount = 0;
         createInfo.pNext = nullptr;
     }
+
+    std::vector<const char *> enabledLayers;
+    DebugUtils::AppendInstanceLayers(enabledLayers);
+    createInfo.enabledLayerCount = enabledLayers.size();
+    createInfo.ppEnabledLayerNames = enabledLayers.data();
 
     m_vk_instance = vk::createInstance(createInfo);
 }
@@ -145,7 +102,7 @@ void VulkanApp::logAvailablePhysicalDevices(const std::vector<vk::PhysicalDevice
     }
 }
 
-bool VulkanApp::checkExtensionsSupport(const vk::PhysicalDevice& device)
+bool VulkanApp::checkDeviceExtensionsSupport(const vk::PhysicalDevice& device)
 {
     std::set<std::string> requiredExtensions(m_device_extensions.begin(), m_device_extensions.end());
 
@@ -160,7 +117,7 @@ bool VulkanApp::checkExtensionsSupport(const vk::PhysicalDevice& device)
 bool VulkanApp::isDeviceSuitable(const vk::PhysicalDevice& device)
 {
     const auto indices = QueueFamilyIndices::FindQueueFamilies(device, m_surface_khr);
-    const bool extensionsSupported = checkExtensionsSupport(device);
+    const bool extensionsSupported = checkDeviceExtensionsSupport(device);
     const auto swapChainSupportDetails = SwapChainSupportDetails::QuerySwapChainSupport(device, m_surface_khr);
 
     return indices.isComplete() && extensionsSupported && swapChainSupportDetails.isAdequate();
@@ -231,15 +188,11 @@ void VulkanApp::createLogicalDevice()
         .pEnabledFeatures = &deviceFeatures
     };
 
-    if constexpr (m_enable_validation_layers)
-    {
-        deviceCreateInfo.enabledLayerCount = m_validation_layers.size();
-        deviceCreateInfo.ppEnabledLayerNames = m_validation_layers.data();
-    }
-    else
-    {
-        deviceCreateInfo.enabledLayerCount = 0;
-    }
+
+    std::vector<const char *> enabledLayers;
+    DebugUtils::AppendInstanceLayers(enabledLayers);
+    deviceCreateInfo.enabledLayerCount = enabledLayers.size();
+    deviceCreateInfo.ppEnabledLayerNames = enabledLayers.data();
 
     m_logical_device = m_physical_device.createDevice(deviceCreateInfo);
 
@@ -279,7 +232,8 @@ void VulkanApp::createSwapChain()
         .imageArrayLayers = 1, // this value is always 1 unless we are developing stereoscopic 3D application
         .imageUsage = vk::ImageUsageFlagBits::eColorAttachment,
         .preTransform = capabilities.currentTransform,
-        .compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque, // opaque, because we don't need blending with other windows
+        .compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque,
+        // opaque, because we don't need blending with other windows
         .presentMode = presentMode,
         .clipped = VK_TRUE,
         .oldSwapchain = VK_NULL_HANDLE
@@ -313,6 +267,7 @@ void VulkanApp::createSwapChain()
 void VulkanApp::initVulkan()
 {
     createInstance();
+    DebugUtils::SetupDebugMessenger(m_vk_instance);
     logSupportedInstanceExtensions();
     createSurface();
     pickPhysicalDevice();
@@ -342,6 +297,7 @@ void VulkanApp::mainLoop()
 
 void VulkanApp::cleanup()
 {
+    DebugUtils::Cleanup(m_vk_instance);
     m_logical_device.destroySwapchainKHR(m_swap_chain);
     m_logical_device.destroy();
     m_vk_instance.destroySurfaceKHR(m_surface_khr);

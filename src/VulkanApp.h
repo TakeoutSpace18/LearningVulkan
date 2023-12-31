@@ -17,15 +17,7 @@ public:
     const int HEIGHT = 400;
 
 private:
-    static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
-        VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-        VkDebugUtilsMessageTypeFlagsEXT messageType,
-        const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-        void* pUserData);
-
-    bool checkValidationLayerSupport();
-
-    void populateDebugMessengerCreateInfo(vk::DebugUtilsMessengerCreateInfoEXT& createInfo);
+    std::vector<const char*> getRequiredInstanceExtensions();
 
     void createInstance();
 
@@ -35,7 +27,7 @@ private:
 
     static void logAvailablePhysicalDevices(const std::vector<vk::PhysicalDevice>& devices);
 
-    bool checkExtensionsSupport(const vk::PhysicalDevice& device);
+    bool checkDeviceExtensionsSupport(const vk::PhysicalDevice& device);
 
     bool isDeviceSuitable(const vk::PhysicalDevice& device);
 
@@ -70,19 +62,9 @@ private:
     vk::Format m_swap_chain_image_format;
     vk::Extent2D m_swap_chain_extent;
 
-    const std::vector<const char *> m_validation_layers = {
-        "VK_LAYER_KHRONOS_validation"
-    };
-
     const std::vector<const char *> m_device_extensions = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME
     };
-
-#ifdef NDEBUG
-    static constexpr bool m_enable_validation_layers = false;
-#else
-    static constexpr bool m_enable_validation_layers = true;
-#endif
 };
 
 #endif //VULKANAPP_H
