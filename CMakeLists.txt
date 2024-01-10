@@ -19,3 +19,14 @@ add_executable(VulkanApp src/main.cpp
         src/DebugUtils.h
 )
 target_link_libraries(VulkanApp Vulkan::Vulkan glfw fmt spdlog)
+
+# enable link-time optimizations (-flto -flto -fno-fat-lto-objects for GCC)
+include(CheckIPOSupported)
+check_ipo_supported(RESULT supported OUTPUT error)
+
+if( supported )
+    message(STATUS "IPO / LTO enabled")
+    set_property(TARGET VulkanApp PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+else()
+    message(STATUS "IPO / LTO not supported: <${error}>")
+endif()
