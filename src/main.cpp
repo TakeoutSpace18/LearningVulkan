@@ -1,10 +1,10 @@
 #include <spdlog/spdlog.h>
 
-#include "VulkanApp.h"
+#include "Application.h"
 
 int main()
 {
-    VulkanApp app;
+    Application app;
     try
     {
         app.run();

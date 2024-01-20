@@ -1,7 +1,4 @@
-#include "VulkanApp.h"
-
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
+#include "VulkanContext.h"
 
 #define VULKAN_HPP_NO_CONSTRUCTORS
 #include <vulkan/vulkan.hpp>
@@ -12,29 +9,41 @@
 #include "DebugUtils.h"
 #include "QueueFamilyIndices.h"
 #include "SwapChainSupportDetails.h"
+#include "glfw/GLFWContext.h"
+#include "utility/Utility.h"
 
-void VulkanApp::run()
+std::unique_ptr<VulkanContext> VulkanContext::ms_instance;
+
+void VulkanContext::Initialize()
 {
-    initWindow();
-    initVulkan();
-    mainLoop();
-    cleanup();
+    ms_instance = std::unique_ptr<VulkanContext>(new VulkanContext());
 }
 
-std::vector<const char *> VulkanApp::getRequiredInstanceExtensions()
+const VulkanContext& VulkanContext::Get()
 {
-    uint32_t glfwExtensionCount = 0;
-    const char** glfwExtensions;
-    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+    ASSERT(ms_instance != nullptr && "VulkanContext has not been initialized!");
+    return *ms_instance;
+}
 
-    std::vector extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+const vk::Device& VulkanContext::getLogicalDevice() const
+{
+    return m_logicalDevice;
+}
 
+VulkanContext::VulkanContext()
+{
+    init();
+}
+
+std::vector<const char *> VulkanContext::getRequiredInstanceExtensions()
+{
+    std::vector extensions = GLFWContext::Get().getRequiredVulkanInstanceExtensions();
     DebugUtils::AppendRequiredInstanceExtensions(extensions);
 
     return extensions;
 }
 
-void VulkanApp::createInstance()
+void VulkanContext::createInstance()
 {
     vk::ApplicationInfo appInfo = {
         .sType = vk::StructureType::eApplicationInfo,
@@ -75,7 +84,7 @@ void VulkanApp::createInstance()
     m_instance = vk::createInstance(createInfo);
 }
 
-void VulkanApp::logSupportedInstanceExtensions()
+void VulkanContext::logSupportedInstanceExtensions()
 {
     spdlog::info("supported instance extensions:");
     for (auto extensionProperties : vk::enumerateInstanceExtensionProperties())
@@ -84,13 +93,13 @@ void VulkanApp::logSupportedInstanceExtensions()
     }
 }
 
-bool VulkanApp::isDescreteGPU(const vk::PhysicalDevice& device)
+bool VulkanContext::isDescreteGPU(const vk::PhysicalDevice& device)
 {
     const auto deviceProperties = device.getProperties();
     return deviceProperties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu;
 }
 
-void VulkanApp::logAvailablePhysicalDevices(const std::vector<vk::PhysicalDevice>& devices)
+void VulkanContext::logAvailablePhysicalDevices(const std::vector<vk::PhysicalDevice>& devices)
 {
     spdlog::info("Available physical devices:");
     int number = 0;
@@ -102,7 +111,7 @@ void VulkanApp::logAvailablePhysicalDevices(const std::vector<vk::PhysicalDevice
     }
 }
 
-bool VulkanApp::checkDeviceExtensionsSupport(const vk::PhysicalDevice& device)
+bool VulkanContext::checkDeviceExtensionsSupport(const vk::PhysicalDevice& device)
 {
     std::set<std::string> requiredExtensions(m_device_extensions.begin(), m_device_extensions.end());
 
@@ -114,7 +123,7 @@ bool VulkanApp::checkDeviceExtensionsSupport(const vk::PhysicalDevice& device)
     return requiredExtensions.empty();
 }
 
-bool VulkanApp::isDeviceSuitable(const vk::PhysicalDevice& device)
+bool VulkanContext::isDeviceSuitable(const vk::PhysicalDevice& device)
 {
     const auto indices = QueueFamilyIndices::FindQueueFamilies(device, m_surface);
     const bool extensionsSupported = checkDeviceExtensionsSupport(device);
@@ -123,7 +132,7 @@ bool VulkanApp::isDeviceSuitable(const vk::PhysicalDevice& device)
     return indices.isComplete() && extensionsSupported && swapChainSupportDetails.isAdequate();
 }
 
-void VulkanApp::pickPhysicalDevice()
+void VulkanContext::pickPhysicalDevice()
 {
     const auto devices = m_instance.enumeratePhysicalDevices();
     if (devices.empty())
@@ -158,7 +167,7 @@ void VulkanApp::pickPhysicalDevice()
     throw std::runtime_error("Can't find suitable GPU!");
 }
 
-void VulkanApp::createLogicalDevice()
+void VulkanContext::createLogicalDevice()
 {
     const auto indices = QueueFamilyIndices::FindQueueFamilies(m_physicalDevice, m_surface);
 
@@ -200,23 +209,13 @@ void VulkanApp::createLogicalDevice()
     m_presentQueue = m_logicalDevice.getQueue(indices.presentFamily.value(), 0);
 }
 
-void VulkanApp::createSurface()
-{
-    auto surf = static_cast<VkSurfaceKHR>(m_surface);
-    if (glfwCreateWindowSurface(m_instance, m_window, nullptr, &surf) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Can't create window surface!");
-    }
-    m_surface = surf;
-}
-
-void VulkanApp::createSwapChain()
+void VulkanContext::createSwapChain()
 {
     auto swapChainSupportDetails = SwapChainSupportDetails::QuerySwapChainSupport(m_physicalDevice, m_surface);
 
     vk::SurfaceFormatKHR surfaceFormat = swapChainSupportDetails.chooseSurfaceFormat();
     vk::PresentModeKHR presentMode = swapChainSupportDetails.choosePresentMode();
-    vk::Extent2D extent = swapChainSupportDetails.chooseExtent(m_window);
+    vk::Extent2D extent = swapChainSupportDetails.chooseExtent();
     vk::SurfaceCapabilitiesKHR capabilities = swapChainSupportDetails.capabilities();
     std::uint32_t imageCount = swapChainSupportDetails.chooseImageCount();
 
@@ -264,7 +263,7 @@ void VulkanApp::createSwapChain()
     m_swapChainExtent = extent;
 }
 
-void VulkanApp::createImageViews()
+void VulkanContext::createImageViews()
 {
     m_swapChainImageViews.resize(m_swapChainImages.size());
     for (std::size_t i = 0; i < m_swapChainImages.size(); ++i)
@@ -299,39 +298,25 @@ void VulkanApp::createImageViews()
     }
 }
 
-void VulkanApp::initVulkan()
+void VulkanContext::init()
 {
     createInstance();
     DebugUtils::SetupDebugMessenger(m_instance);
     logSupportedInstanceExtensions();
-    createSurface();
+    GLFWContext::Get().createVulkanWindowSurface(m_instance, m_surface);
     pickPhysicalDevice();
     createLogicalDevice();
     createSwapChain();
     createImageViews();
+    // createGraphicsPipeline();
 }
 
-void VulkanApp::initWindow()
+VulkanContext::~VulkanContext()
 {
-    glfwSetErrorCallback([](int code, const char* desc) {
-        spdlog::error("GLFW Error {}: {}", code, desc);
-    });
-
-    glfwInit();
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-    m_window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan App", nullptr, nullptr);
+    cleanup();
 }
 
-void VulkanApp::mainLoop()
-{
-    while (!glfwWindowShouldClose(m_window))
-    {
-        glfwPollEvents();
-    }
-}
-
-void VulkanApp::cleanup()
+void VulkanContext::cleanup()
 {
     DebugUtils::Cleanup(m_instance);
     for (const auto& imageView : m_swapChainImageViews)
@@ -342,6 +327,4 @@ void VulkanApp::cleanup()
     m_logicalDevice.destroy();
     m_instance.destroySurfaceKHR(m_surface);
     m_instance.destroy();
-    glfwDestroyWindow(m_window);
-    glfwTerminate();
 }

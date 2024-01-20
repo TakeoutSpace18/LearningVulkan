@@ -4,7 +4,7 @@
 #include <limits>
 #include <algorithm>
 
-#include <GLFW/glfw3.h>
+#include "glfw/GLFWContext.h"
 
 bool SwapChainSupportDetails::isAdequate() const
 {
@@ -40,7 +40,7 @@ vk::PresentModeKHR SwapChainSupportDetails::choosePresentMode() const
     return vk::PresentModeKHR::eFifo;
 }
 
-vk::Extent2D SwapChainSupportDetails::chooseExtent(GLFWwindow* window) const
+vk::Extent2D SwapChainSupportDetails::chooseExtent() const
 {
     if (m_capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
     {
@@ -49,10 +49,9 @@ vk::Extent2D SwapChainSupportDetails::chooseExtent(GLFWwindow* window) const
 
     // some window managers allow us to specify extent ourselves,
     // so we need to retrieve it from glfw.
-    int width, height;
-    glfwGetFramebufferSize(window, &width, &height);
+    auto [width, height] = GLFWContext::Get().getFrameBufferSize();
 
-    VkExtent2D actualExtent = {
+    vk::Extent2D actualExtent = {
         static_cast<std::uint32_t>(width),
         static_cast<std::uint32_t>(height)
     };

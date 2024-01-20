@@ -1,22 +1,35 @@
 #ifndef VULKANAPP_H
 #define VULKANAPP_H
 
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
-
 #define VULKAN_HPP_NO_CONSTRUCTORS
 #include <vulkan/vulkan.hpp>
 
+#include <memory>
 
-class VulkanApp
+#include "utility/NonCopyable.h"
+#include "utility/NonMoveable.h"
+#include "utility/Utility.h"
+
+// TODO: extract VulkanDevice class from here
+class VulkanContext : NonCopyable, NonMoveable
 {
 public:
-    void run();
 
-    const int WIDTH = 600;
-    const int HEIGHT = 400;
+    ~VulkanContext();
+
+    static void Initialize();
+    static const VulkanContext& Get();
+
+    NODISCARD const vk::Device& getLogicalDevice() const;
 
 private:
+    VulkanContext();
+
+    void init();
+
+
+    void cleanup();
+
     std::vector<const char*> getRequiredInstanceExtensions();
 
     void createInstance();
@@ -35,21 +48,11 @@ private:
 
     void createLogicalDevice();
 
-    void createSurface();
-
     void createSwapChain();
 
     void createImageViews();
 
-    void initVulkan();
-
-    void initWindow();
-
-    void mainLoop();
-
-    void cleanup();
-
-    GLFWwindow* m_window = nullptr;
+    void createGraphicsPipeline();
 
     vk::Instance m_instance = VK_NULL_HANDLE;
     vk::SurfaceKHR m_surface = VK_NULL_HANDLE;
@@ -68,6 +71,8 @@ private:
     const std::vector<const char *> m_device_extensions = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME
     };
+
+    static std::unique_ptr<VulkanContext> ms_instance;
 };
 
 #endif //VULKANAPP_H

@@ -2,8 +2,6 @@
 #define SWAPCHAINSUPPORTDETAILS_H
 
 #include <vulkan/vulkan.hpp>
-#include <GLFW/glfw3.h>
-
 
 class SwapChainSupportDetails {
 public:
@@ -11,7 +9,7 @@ public:
 
     [[nodiscard]] vk::SurfaceFormatKHR  chooseSurfaceFormat() const;
     [[nodiscard]] vk::PresentModeKHR    choosePresentMode() const;
-    [[nodiscard]] vk::Extent2D          chooseExtent(GLFWwindow* window) const;
+    [[nodiscard]] vk::Extent2D          chooseExtent() const;
     [[nodiscard]] std::uint32_t         chooseImageCount() const;
 
     [[nodiscard]] vk::SurfaceCapabilitiesKHR capabilities() const;
