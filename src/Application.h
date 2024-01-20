@@ -7,7 +7,6 @@ public:
     void run();
 
 private:
-
     void mainLoop();
 
 };

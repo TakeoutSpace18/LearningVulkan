@@ -1,6 +1,7 @@
 #ifndef SWAPCHAINSUPPORTDETAILS_H
 #define SWAPCHAINSUPPORTDETAILS_H
 
+#define VULKAN_HPP_NO_CONSTRUCTORS
 #include <vulkan/vulkan.hpp>
 
 class SwapChainSupportDetails {

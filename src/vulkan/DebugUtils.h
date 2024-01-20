@@ -32,6 +32,7 @@ private:
 
     static bool CheckValidationLayerSupport();
 
+private:
     inline static vk::DebugUtilsMessengerEXT s_debug_messenger = VK_NULL_HANDLE;
 
     inline const static std::vector<const char *> s_validation_layers = {

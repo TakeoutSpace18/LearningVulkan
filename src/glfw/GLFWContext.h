@@ -7,12 +7,12 @@
 #include <vulkan/vulkan.hpp>
 
 #include "utility/NonCopyable.h"
-#include "utility/NonMoveable.h"
+#include "utility/NonMovable.h"
 #include "utility/Utility.h"
 
 struct GLFWwindow;
 
-class GLFWContext : NonCopyable, NonMoveable {
+class GLFWContext : NonCopyable, NonMovable {
 public:
 
     static void Initialize(int width, int height, const std::string& title);

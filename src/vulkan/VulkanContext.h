@@ -7,11 +7,11 @@
 #include <memory>
 
 #include "utility/NonCopyable.h"
-#include "utility/NonMoveable.h"
+#include "utility/NonMovable.h"
 #include "utility/Utility.h"
 
 // TODO: extract VulkanDevice class from here
-class VulkanContext : NonCopyable, NonMoveable
+class VulkanContext : NonCopyable, NonMovable
 {
 public:
 
@@ -26,7 +26,6 @@ private:
     VulkanContext();
 
     void init();
-
 
     void cleanup();
 
@@ -54,6 +53,7 @@ private:
 
     void createGraphicsPipeline();
 
+private:
     vk::Instance m_instance = VK_NULL_HANDLE;
     vk::SurfaceKHR m_surface = VK_NULL_HANDLE;
     vk::PhysicalDevice m_physicalDevice = VK_NULL_HANDLE;

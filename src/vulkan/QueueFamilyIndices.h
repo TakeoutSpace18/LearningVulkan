@@ -7,9 +7,11 @@
 #include <vulkan/vulkan.hpp>
 
 struct QueueFamilyIndices {
+public:
     std::optional<std::uint32_t> graphicsFamily;
     std::optional<std::uint32_t> presentFamily;
 
+public:
     [[nodiscard]] bool isComplete() const;
     [[nodiscard]] std::set<std::uint32_t> getUniqueIndices() const;
 
