@@ -35,7 +35,7 @@ private:
 
     GLFWwindow* m_window = nullptr;
 
-    static GLFWContext ms_instance;
+    static GLFWContext s_instance;
 };
 
 

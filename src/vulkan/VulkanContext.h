@@ -6,6 +6,8 @@
 
 #include <memory>
 
+#include "VulkanDevice.h"
+#include "VulkanSwapchain.h"
 #include "utility/NonCopyable.h"
 #include "utility/NonMovable.h"
 #include "utility/Utility.h"
@@ -21,9 +23,12 @@ public:
     static const VulkanContext& Get();
 
     NODISCARD const vk::Device& getLogicalDevice() const;
+    NODISCARD const vk::PhysicalDevice& getPhysicalDevice() const;
+    NODISCARD const vk::Instance& getVulkanInstance() const;
+    NODISCARD const vk::SurfaceKHR& getSurface() const;
 
 private:
-    VulkanContext();
+    VulkanContext() = default;
 
     void init();
 
@@ -33,46 +38,15 @@ private:
 
     void createInstance();
 
-    static void logSupportedInstanceExtensions();
-
-    static bool isDescreteGPU(const vk::PhysicalDevice& device);
-
-    static void logAvailablePhysicalDevices(const std::vector<vk::PhysicalDevice>& devices);
-
-    bool checkDeviceExtensionsSupport(const vk::PhysicalDevice& device);
-
-    bool isDeviceSuitable(const vk::PhysicalDevice& device);
-
-    void pickPhysicalDevice();
-
-    void createLogicalDevice();
-
-    void createSwapChain();
-
-    void createImageViews();
-
-    void createGraphicsPipeline();
+    static void LogSupportedInstanceExtensions();
 
 private:
     vk::Instance m_instance = VK_NULL_HANDLE;
     vk::SurfaceKHR m_surface = VK_NULL_HANDLE;
-    vk::PhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
-    vk::Device m_logicalDevice = VK_NULL_HANDLE;
-    vk::SwapchainKHR m_swapChain = VK_NULL_HANDLE;
-    vk::Queue m_graphicsQueue = VK_NULL_HANDLE;
-    vk::Queue m_presentQueue = VK_NULL_HANDLE;
+    VulkanDevice m_device;
+    VulkanSwapchain m_swapchain;
 
-    std::vector<vk::Image> m_swapChainImages;
-    std::vector<vk::ImageView> m_swapChainImageViews;
-
-    vk::Format m_swapChainImageFormat;
-    vk::Extent2D m_swapChainExtent;
-
-    const std::vector<const char *> m_device_extensions = {
-        VK_KHR_SWAPCHAIN_EXTENSION_NAME
-    };
-
-    static std::unique_ptr<VulkanContext> ms_instance;
+    static std::unique_ptr<VulkanContext> s_instance;
 };
 
 #endif //VULKANAPP_H

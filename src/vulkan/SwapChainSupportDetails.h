@@ -4,16 +4,18 @@
 #define VULKAN_HPP_NO_CONSTRUCTORS
 #include <vulkan/vulkan.hpp>
 
+#include "utility/Utility.h"
+
 class SwapChainSupportDetails {
 public:
-    [[nodiscard]] bool isAdequate() const;
+    NODISCARD bool isAdequate() const;
 
-    [[nodiscard]] vk::SurfaceFormatKHR  chooseSurfaceFormat() const;
-    [[nodiscard]] vk::PresentModeKHR    choosePresentMode() const;
-    [[nodiscard]] vk::Extent2D          chooseExtent() const;
-    [[nodiscard]] std::uint32_t         chooseImageCount() const;
+    NODISCARD vk::SurfaceFormatKHR  chooseSurfaceFormat() const;
+    NODISCARD vk::PresentModeKHR    choosePresentMode() const;
+    NODISCARD vk::Extent2D          chooseExtent() const;
+    NODISCARD std::uint32_t         chooseImageCount() const;
 
-    [[nodiscard]] vk::SurfaceCapabilitiesKHR capabilities() const;
+    NODISCARD vk::SurfaceCapabilitiesKHR capabilities() const;
 
     static SwapChainSupportDetails QuerySwapChainSupport(const vk::PhysicalDevice& device, const vk::SurfaceKHR& surface);
 

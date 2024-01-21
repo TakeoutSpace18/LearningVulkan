@@ -16,7 +16,7 @@ public:
 
     static void SetupDebugMessenger(vk::Instance instance);
 
-    static void Cleanup(vk::Instance instance);
+    static void Cleanup();
 
     static constexpr bool ValidationLayersEnabled()
     {

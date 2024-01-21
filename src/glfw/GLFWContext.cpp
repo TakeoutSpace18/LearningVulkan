@@ -7,12 +7,12 @@
 
 #include "utility/Utility.h"
 
-GLFWContext GLFWContext::ms_instance;
+GLFWContext GLFWContext::s_instance;
 
 GLFWContext& GLFWContext::Get()
 {
-    ASSERT(ms_instance.m_window != nullptr && "GLFWwindow has not been created!");
-    return ms_instance;
+    ASSERT(s_instance.m_window != nullptr && "GLFWwindow has not been created!");
+    return s_instance;
 }
 
 std::vector<const char *> GLFWContext::getRequiredVulkanInstanceExtensions()
@@ -65,5 +65,5 @@ void GLFWContext::Initialize(int width, int height, const std::string& title)
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-    ms_instance.m_window = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
+    s_instance.m_window = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
 }

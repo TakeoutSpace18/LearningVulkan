@@ -26,6 +26,10 @@ add_executable(VulkanApp src/main.cpp
         src/utility/Utility.h
         src/utility/NonCopyable.h
         src/utility/NonMovable.h
+        src/vulkan/VulkanDevice.cpp
+        src/vulkan/VulkanDevice.h
+        src/vulkan/VulkanSwapchain.cpp
+        src/vulkan/VulkanSwapchain.h
 )
 target_link_libraries(VulkanApp Vulkan::Vulkan glfw fmt spdlog)
 target_include_directories(VulkanApp PRIVATE src)

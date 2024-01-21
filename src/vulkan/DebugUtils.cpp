@@ -5,6 +5,8 @@
 #include <set>
 #include <spdlog/spdlog.h>
 
+#include "VulkanContext.h"
+
 VkBool32 DebugUtils::debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
                                    VkDebugUtilsMessageTypeFlagsEXT messageType,
                                    const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
@@ -68,8 +70,9 @@ void DebugUtils::SetupDebugMessenger(vk::Instance instance)
     s_debug_messenger = instance.createDebugUtilsMessengerEXT(createInfo, nullptr, dldi);
 }
 
-void DebugUtils::Cleanup(vk::Instance instance)
+void DebugUtils::Cleanup()
 {
+    const vk::Instance& instance = VulkanContext::Get().getVulkanInstance();
     const vk::DispatchLoaderDynamic dldi(instance, vkGetInstanceProcAddr);
     instance.destroyDebugUtilsMessengerEXT(s_debug_messenger, nullptr, dldi);
 }
