@@ -1,16 +1,18 @@
 #include "VulkanDevice.h"
 
+#include <set>
+#include <vulkan/vk_enum_string_helper.h>
+
 #include "DebugUtils.h"
 #include "QueueFamilyIndices.h"
 #include "SwapChainSupportDetails.h"
-
-#include <set>
-
 #include "VulkanContext.h"
+
 
 void VulkanDevice::init(const std::vector<vk::PhysicalDevice>& availableDevices)
 {
     m_physicalDevice = pickPhysicalDevice(availableDevices);
+    logPhysicalDeviceInfo(m_physicalDevice);
     createLogicalDevice(m_physicalDevice);
 }
 
@@ -29,7 +31,7 @@ const vk::PhysicalDevice& VulkanDevice::getPhysicalDevice() const
     return m_physicalDevice;
 }
 
-bool VulkanDevice::isDescreteGPU(const vk::PhysicalDevice& device)
+bool VulkanDevice::isDescreteGPU(const vk::PhysicalDevice device)
 {
     const auto deviceProperties = device.getProperties();
     return deviceProperties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu;
@@ -47,7 +49,18 @@ void VulkanDevice::logAvailablePhysicalDevices(const std::vector<vk::PhysicalDev
     }
 }
 
-bool VulkanDevice::checkDeviceExtensionsSupport(const vk::PhysicalDevice& device)
+void VulkanDevice::logPhysicalDeviceInfo(vk::PhysicalDevice device)
+{
+    vk::PhysicalDeviceProperties props = device.getProperties();
+    spdlog::info("---------- {} ----------", props.deviceName);
+    spdlog::info("\tType: {}",  string_VkPhysicalDeviceType(static_cast<VkPhysicalDeviceType>(props.deviceType)));
+    spdlog::info("\tAPI version: {}.{}.{}",
+        VK_VERSION_MAJOR(props.apiVersion),
+        VK_VERSION_MINOR(props.apiVersion),
+        VK_VERSION_PATCH(props.apiVersion));
+}
+
+bool VulkanDevice::checkDeviceExtensionsSupport(const vk::PhysicalDevice device)
 {
     std::set<std::string> requiredExtensions(m_deviceExtensions.begin(), m_deviceExtensions.end());
 
@@ -59,7 +72,7 @@ bool VulkanDevice::checkDeviceExtensionsSupport(const vk::PhysicalDevice& device
     return requiredExtensions.empty();
 }
 
-bool VulkanDevice::isDeviceSuitable(const vk::PhysicalDevice& device)
+bool VulkanDevice::isDeviceSuitable(const vk::PhysicalDevice device)
 {
     const auto indices = QueueFamilyIndices::FindQueueFamilies(device, VulkanContext::Get().getSurface());
     const bool extensionsSupported = checkDeviceExtensionsSupport(device);

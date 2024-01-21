@@ -16,13 +16,15 @@ public:
     NODISCARD const vk::PhysicalDevice& getPhysicalDevice() const;
 
 private:
-    static bool isDescreteGPU(const vk::PhysicalDevice& device);
+    static bool isDescreteGPU(vk::PhysicalDevice device);
 
     static void logAvailablePhysicalDevices(const std::vector<vk::PhysicalDevice>& devices);
 
-    bool checkDeviceExtensionsSupport(const vk::PhysicalDevice& device);
+    static void logPhysicalDeviceInfo(vk::PhysicalDevice device);
 
-    bool isDeviceSuitable(const vk::PhysicalDevice& device);
+    bool checkDeviceExtensionsSupport(vk::PhysicalDevice device);
+
+    bool isDeviceSuitable(vk::PhysicalDevice device);
 
     vk::PhysicalDevice pickPhysicalDevice(const std::vector<vk::PhysicalDevice>& devices);
 
