@@ -26,6 +26,7 @@ public:
     NODISCARD const vk::PhysicalDevice& getPhysicalDevice() const;
     NODISCARD const vk::Instance& getVulkanInstance() const;
     NODISCARD const vk::SurfaceKHR& getSurface() const;
+    NODISCARD const VulkanSwapchain& getSwapchain() const;
 
 private:
     VulkanContext() = default;

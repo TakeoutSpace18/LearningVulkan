@@ -46,6 +46,11 @@ const vk::SurfaceKHR& VulkanContext::getSurface() const
     return m_surface;
 }
 
+const VulkanSwapchain& VulkanContext::getSwapchain() const
+{
+    return m_swapchain;
+}
+
 std::vector<const char *> VulkanContext::getRequiredInstanceExtensions()
 {
     std::vector extensions = GLFWContext::Get().getRequiredVulkanInstanceExtensions();

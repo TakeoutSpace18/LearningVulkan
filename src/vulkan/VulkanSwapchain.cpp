@@ -21,6 +21,11 @@ void VulkanSwapchain::destroy() noexcept
     logicalDevice.destroySwapchainKHR(m_swapChain);
 }
 
+vk::Extent2D VulkanSwapchain::getExtent() const
+{
+    return m_swapChainExtent;
+}
+
 void VulkanSwapchain::createSwapChain()
 {
     vk::PhysicalDevice physicalDevice = VulkanContext::Get().getPhysicalDevice();
