@@ -1,4 +1,4 @@
-#include "DebugUtils.h"
+#include "VulkanDebugUtils.h"
 
 #include <vulkan/vk_enum_string_helper.h>
 #include <vulkan/vk_extension_helper.h>
@@ -7,7 +7,7 @@
 
 #include "VulkanContext.h"
 
-VkBool32 DebugUtils::debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+VkBool32 VulkanDebugUtils::debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
                                    VkDebugUtilsMessageTypeFlagsEXT messageType,
                                    const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
                                    void* pUserData)
@@ -32,7 +32,7 @@ VkBool32 DebugUtils::debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messag
     return VK_FALSE;
 }
 
-bool DebugUtils::CheckValidationLayerSupport()
+bool VulkanDebugUtils::CheckValidationLayerSupport()
 {
     std::set<std::string> requiredLayers(s_validation_layers.begin(), s_validation_layers.end());
 
@@ -44,7 +44,7 @@ bool DebugUtils::CheckValidationLayerSupport()
     return requiredLayers.empty();
 }
 
-void DebugUtils::PopulateDebugMessengerCreateInfo(vk::DebugUtilsMessengerCreateInfoEXT& createInfo)
+void VulkanDebugUtils::PopulateDebugMessengerCreateInfo(vk::DebugUtilsMessengerCreateInfoEXT& createInfo)
 {
     createInfo = vk::DebugUtilsMessengerCreateInfoEXT{};
     createInfo.sType = vk::StructureType::eDebugUtilsMessengerCreateInfoEXT;
@@ -59,7 +59,7 @@ void DebugUtils::PopulateDebugMessengerCreateInfo(vk::DebugUtilsMessengerCreateI
     createInfo.pfnUserCallback = debugCallback;
 }
 
-void DebugUtils::SetupDebugMessenger(vk::Instance instance)
+void VulkanDebugUtils::SetupDebugMessenger(vk::Instance instance)
 {
     if constexpr (!ValidationLayersEnabled()) return;
 
@@ -70,14 +70,14 @@ void DebugUtils::SetupDebugMessenger(vk::Instance instance)
     s_debug_messenger = instance.createDebugUtilsMessengerEXT(createInfo, nullptr, dldi);
 }
 
-void DebugUtils::Cleanup()
+void VulkanDebugUtils::Cleanup()
 {
     const vk::Instance& instance = VulkanContext::Get().getVulkanInstance();
     const vk::DispatchLoaderDynamic dldi(instance, vkGetInstanceProcAddr);
     instance.destroyDebugUtilsMessengerEXT(s_debug_messenger, nullptr, dldi);
 }
 
-void DebugUtils::AppendRequiredInstanceExtensions(std::vector<const char *>& instanceExtensions)
+void VulkanDebugUtils::AppendRequiredInstanceExtensions(std::vector<const char *>& instanceExtensions)
 {
     if constexpr (ValidationLayersEnabled())
     {
@@ -85,7 +85,7 @@ void DebugUtils::AppendRequiredInstanceExtensions(std::vector<const char *>& ins
     }
 }
 
-void DebugUtils::AppendInstanceLayers(std::vector<const char*>& instanceLayers)
+void VulkanDebugUtils::AppendInstanceLayers(std::vector<const char*>& instanceLayers)
 {
     if constexpr (ValidationLayersEnabled())
     {

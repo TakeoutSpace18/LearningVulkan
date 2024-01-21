@@ -1,11 +1,11 @@
-#include "RenderPipeline.h"
+#include "VulkanRenderPipeline.h"
 
 #include <fstream>
 #include <ios>
 
 #include "VulkanContext.h"
 
-void RenderPipeline::init()
+void VulkanRenderPipeline::init()
 {
     vk::ShaderModule vertexShaderModule = createShaderModule(readFile("shaders/triangle.vert"));
     vk::ShaderModule fragmentShaderModule = createShaderModule(readFile("shaders/triangle.frag"));
@@ -44,7 +44,7 @@ void RenderPipeline::init()
         .sType = vk::StructureType::ePipelineDynamicStateCreateInfo,
         .pNext = nullptr,
         .flags = vk::PipelineDynamicStateCreateFlags(),
-        .dynamicStateCount = dynamicStates.size(),
+        .dynamicStateCount = static_cast<std::uint32_t>(dynamicStates.size()),
         .pDynamicStates = dynamicStates.data()
     };
 
@@ -160,12 +160,12 @@ void RenderPipeline::init()
     VulkanContext::Get().getLogicalDevice().destroyShaderModule(fragmentShaderModule);
 }
 
-void RenderPipeline::destroy() noexcept
+void VulkanRenderPipeline::destroy() noexcept
 {
     VulkanContext::Get().getLogicalDevice().destroyPipelineLayout(m_pipelineLayout);
 }
 
-std::vector<char> RenderPipeline::readFile(const std::string& filename)
+std::vector<char> VulkanRenderPipeline::readFile(const std::string& filename)
 {
     std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
@@ -183,7 +183,7 @@ std::vector<char> RenderPipeline::readFile(const std::string& filename)
     return buffer;
 }
 
-vk::ShaderModule RenderPipeline::createShaderModule(const std::vector<char>& code)
+vk::ShaderModule VulkanRenderPipeline::createShaderModule(const std::vector<char>& code)
 {
     const vk::ShaderModuleCreateInfo createInfo = {
         .sType = vk::StructureType::eShaderModuleCreateInfo,

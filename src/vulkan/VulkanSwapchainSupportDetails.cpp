@@ -1,16 +1,16 @@
-#include "SwapChainSupportDetails.h"
+#include "VulkanSwapchainSupportDetails.h"
 
 #include <cstdint>
 #include <limits>
 
 #include "glfw/GLFWContext.h"
 
-bool SwapChainSupportDetails::isAdequate() const
+bool VulkanSwapchainSupportDetails::isAdequate() const
 {
     return !m_formats.empty() && !m_presentModes.empty();
 }
 
-vk::SurfaceFormatKHR SwapChainSupportDetails::chooseSurfaceFormat() const
+vk::SurfaceFormatKHR VulkanSwapchainSupportDetails::chooseSurfaceFormat() const
 {
     for (const auto& availableFormat : m_formats)
     {
@@ -24,7 +24,7 @@ vk::SurfaceFormatKHR SwapChainSupportDetails::chooseSurfaceFormat() const
     return m_formats.at(0);
 }
 
-vk::PresentModeKHR SwapChainSupportDetails::choosePresentMode() const
+vk::PresentModeKHR VulkanSwapchainSupportDetails::choosePresentMode() const
 {
     for (const auto& availablePresentMode : m_presentModes)
     {
@@ -39,7 +39,7 @@ vk::PresentModeKHR SwapChainSupportDetails::choosePresentMode() const
     return vk::PresentModeKHR::eFifo;
 }
 
-vk::Extent2D SwapChainSupportDetails::chooseExtent() const
+vk::Extent2D VulkanSwapchainSupportDetails::chooseExtent() const
 {
     if (m_capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
     {
@@ -63,7 +63,7 @@ vk::Extent2D SwapChainSupportDetails::chooseExtent() const
     return actualExtent;
 }
 
-std::uint32_t SwapChainSupportDetails::chooseImageCount() const
+std::uint32_t VulkanSwapchainSupportDetails::chooseImageCount() const
 {
     // requesting exact minimum may sometimes cause us to wait on the driver
     // to complete internal operations before we can acquire another image to render to.
@@ -79,15 +79,15 @@ std::uint32_t SwapChainSupportDetails::chooseImageCount() const
     return imageCount;
 }
 
-vk::SurfaceCapabilitiesKHR SwapChainSupportDetails::capabilities() const
+vk::SurfaceCapabilitiesKHR VulkanSwapchainSupportDetails::capabilities() const
 {
     return m_capabilities;
 }
 
-SwapChainSupportDetails SwapChainSupportDetails::QuerySwapChainSupport(const vk::PhysicalDevice& device,
+VulkanSwapchainSupportDetails VulkanSwapchainSupportDetails::QuerySwapChainSupport(const vk::PhysicalDevice& device,
                                                                        const vk::SurfaceKHR& surface)
 {
-    SwapChainSupportDetails details;
+    VulkanSwapchainSupportDetails details;
     details.m_capabilities = device.getSurfaceCapabilitiesKHR(surface);
     details.m_formats = device.getSurfaceFormatsKHR(surface);
     details.m_presentModes = device.getSurfacePresentModesKHR(surface);

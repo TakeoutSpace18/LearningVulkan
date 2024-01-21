@@ -1,11 +1,11 @@
-#include "QueueFamilyIndices.h"
+#include "VulkanQueueFamilyIndices.h"
 
-bool QueueFamilyIndices::isComplete() const
+bool VulkanQueueFamilyIndices::isComplete() const
 {
     return graphicsFamily.has_value() && presentFamily.has_value();
 }
 
-std::set<std::uint32_t> QueueFamilyIndices::getUniqueIndices() const
+std::set<std::uint32_t> VulkanQueueFamilyIndices::getUniqueIndices() const
 {
     return {
         graphicsFamily.value(),
@@ -13,10 +13,10 @@ std::set<std::uint32_t> QueueFamilyIndices::getUniqueIndices() const
     };
 }
 
-QueueFamilyIndices QueueFamilyIndices::FindQueueFamilies(const vk::PhysicalDevice& device,
+VulkanQueueFamilyIndices VulkanQueueFamilyIndices::FindQueueFamilies(const vk::PhysicalDevice& device,
                                                          const vk::SurfaceKHR& surface)
 {
-    QueueFamilyIndices indices;
+    VulkanQueueFamilyIndices indices;
     std::uint32_t i = 0;
     for (const auto family : device.getQueueFamilyProperties())
     {

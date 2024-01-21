@@ -6,9 +6,9 @@
 #include <set>
 #include <spdlog/spdlog.h>
 
-#include "DebugUtils.h"
-#include "QueueFamilyIndices.h"
-#include "SwapChainSupportDetails.h"
+#include "VulkanDebugUtils.h"
+#include "VulkanQueueFamilyIndices.h"
+#include "VulkanSwapchainSupportDetails.h"
 #include "glfw/GLFWContext.h"
 #include "utility/Utility.h"
 
@@ -26,22 +26,22 @@ const VulkanContext& VulkanContext::Get()
     return *s_instance;
 }
 
-const vk::Device& VulkanContext::getLogicalDevice() const
+vk::Device VulkanContext::getLogicalDevice() const
 {
     return m_device.getLogicalDevice();
 }
 
-const vk::PhysicalDevice& VulkanContext::getPhysicalDevice() const
+vk::PhysicalDevice VulkanContext::getPhysicalDevice() const
 {
     return m_device.getPhysicalDevice();
 }
 
-const vk::Instance& VulkanContext::getVulkanInstance() const
+vk::Instance VulkanContext::getVulkanInstance() const
 {
     return m_instance;
 }
 
-const vk::SurfaceKHR& VulkanContext::getSurface() const
+vk::SurfaceKHR VulkanContext::getSurface() const
 {
     return m_surface;
 }
@@ -54,7 +54,7 @@ const VulkanSwapchain& VulkanContext::getSwapchain() const
 std::vector<const char *> VulkanContext::getRequiredInstanceExtensions()
 {
     std::vector extensions = GLFWContext::Get().getRequiredVulkanInstanceExtensions();
-    DebugUtils::AppendRequiredInstanceExtensions(extensions);
+    VulkanDebugUtils::AppendRequiredInstanceExtensions(extensions);
 
     return extensions;
 }
@@ -82,9 +82,9 @@ void VulkanContext::createInstance()
     };
 
     vk::DebugUtilsMessengerCreateInfoEXT debugCreateInfo;
-    if constexpr (DebugUtils::ValidationLayersEnabled())
+    if constexpr (VulkanDebugUtils::ValidationLayersEnabled())
     {
-        DebugUtils::PopulateDebugMessengerCreateInfo(debugCreateInfo);
+        VulkanDebugUtils::PopulateDebugMessengerCreateInfo(debugCreateInfo);
         createInfo.pNext = &debugCreateInfo;
     }
     else
@@ -93,7 +93,7 @@ void VulkanContext::createInstance()
     }
 
     std::vector<const char *> enabledLayers;
-    DebugUtils::AppendInstanceLayers(enabledLayers);
+    VulkanDebugUtils::AppendInstanceLayers(enabledLayers);
     createInfo.enabledLayerCount = enabledLayers.size();
     createInfo.ppEnabledLayerNames = enabledLayers.data();
 
@@ -112,7 +112,7 @@ void VulkanContext::LogSupportedInstanceExtensions()
 void VulkanContext::init()
 {
     createInstance();
-    DebugUtils::SetupDebugMessenger(m_instance);
+    VulkanDebugUtils::SetupDebugMessenger(m_instance);
     LogSupportedInstanceExtensions();
     GLFWContext::Get().createVulkanWindowSurface(m_instance, m_surface);
     m_device.init(m_instance.enumeratePhysicalDevices());
@@ -126,7 +126,7 @@ VulkanContext::~VulkanContext()
 
 void VulkanContext::cleanup()
 {
-    DebugUtils::Cleanup();
+    VulkanDebugUtils::Cleanup();
     m_swapchain.destroy();
     m_device.destroy();
     m_instance.destroySurfaceKHR(m_surface);

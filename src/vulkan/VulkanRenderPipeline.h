@@ -1,5 +1,5 @@
-#ifndef RENDERPIPELINE_H
-#define RENDERPIPELINE_H
+#ifndef VULKANRENDERPIPELINE_H
+#define VULKANRENDERPIPELINE_H
 #include <string>
 #include <vector>
 
@@ -7,7 +7,7 @@
 #include <vulkan/vulkan.hpp>
 
 
-class RenderPipeline {
+class VulkanRenderPipeline {
 public:
 
     void init();
@@ -24,4 +24,4 @@ private:
 
 
 
-#endif //RENDERPIPELINE_H
+#endif //VULKANRENDERPIPELINE_H

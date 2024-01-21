@@ -1,12 +1,12 @@
-#ifndef QUEUEFAMILYINDICES_H
-#define QUEUEFAMILYINDICES_H
+#ifndef VULKANQUEUEFAMILYINDICES_H
+#define VULKANQUEUEFAMILYINDICES_H
 #include <optional>
 #include <cstdint>
 #include <set>
 
 #include <vulkan/vulkan.hpp>
 
-struct QueueFamilyIndices {
+struct VulkanQueueFamilyIndices {
 public:
     std::optional<std::uint32_t> graphicsFamily;
     std::optional<std::uint32_t> presentFamily;
@@ -15,8 +15,8 @@ public:
     [[nodiscard]] bool isComplete() const;
     [[nodiscard]] std::set<std::uint32_t> getUniqueIndices() const;
 
-    static QueueFamilyIndices FindQueueFamilies(const vk::PhysicalDevice& device, const vk::SurfaceKHR& surface);
+    static VulkanQueueFamilyIndices FindQueueFamilies(const vk::PhysicalDevice& device, const vk::SurfaceKHR& surface);
 };
 
 
-#endif //QUEUEFAMILYINDICES_H
+#endif //VULKANQUEUEFAMILYINDICES_H

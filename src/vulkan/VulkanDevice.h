@@ -12,8 +12,8 @@ public:
     void init(const std::vector<vk::PhysicalDevice>& availableDevices);
     void destroy() noexcept;
 
-    NODISCARD const vk::Device& getLogicalDevice() const;
-    NODISCARD const vk::PhysicalDevice& getPhysicalDevice() const;
+    NODISCARD vk::Device getLogicalDevice() const;
+    NODISCARD vk::PhysicalDevice getPhysicalDevice() const;
 
 private:
     static bool isDescreteGPU(vk::PhysicalDevice device);

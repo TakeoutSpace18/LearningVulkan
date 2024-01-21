@@ -1,12 +1,12 @@
-#ifndef SWAPCHAINSUPPORTDETAILS_H
-#define SWAPCHAINSUPPORTDETAILS_H
+#ifndef VULKANSWAPCHAINSUPPORTDETAILS_H
+#define VULKANSWAPCHAINSUPPORTDETAILS_H
 
 #define VULKAN_HPP_NO_CONSTRUCTORS
 #include <vulkan/vulkan.hpp>
 
 #include "utility/Utility.h"
 
-class SwapChainSupportDetails {
+class VulkanSwapchainSupportDetails {
 public:
     NODISCARD bool isAdequate() const;
 
@@ -17,7 +17,7 @@ public:
 
     NODISCARD vk::SurfaceCapabilitiesKHR capabilities() const;
 
-    static SwapChainSupportDetails QuerySwapChainSupport(const vk::PhysicalDevice& device, const vk::SurfaceKHR& surface);
+    static VulkanSwapchainSupportDetails QuerySwapChainSupport(const vk::PhysicalDevice& device, const vk::SurfaceKHR& surface);
 
 private:
     vk::SurfaceCapabilitiesKHR m_capabilities;
@@ -27,4 +27,4 @@ private:
 
 
 
-#endif //SWAPCHAINSUPPORTDETAILS_H
+#endif //VULKANSWAPCHAINSUPPORTDETAILS_H

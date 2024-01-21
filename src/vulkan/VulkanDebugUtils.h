@@ -1,11 +1,11 @@
-#ifndef DEBUGUTILS_H
-#define DEBUGUTILS_H
+#ifndef VULKANDEBUGUTILS_H
+#define VULKANDEBUGUTILS_H
 
 #include <vector>
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vk_extension_helper.h>
 
-class DebugUtils
+class VulkanDebugUtils
 {
 public:
     static void AppendRequiredInstanceExtensions(std::vector<const char *>& instanceExtensions);
@@ -47,4 +47,4 @@ private:
 };
 
 
-#endif //DEBUGUTILS_H
+#endif //VULKANDEBUGUTILS_H

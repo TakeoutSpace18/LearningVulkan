@@ -3,9 +3,9 @@
 #include <set>
 #include <vulkan/vk_enum_string_helper.h>
 
-#include "DebugUtils.h"
-#include "QueueFamilyIndices.h"
-#include "SwapChainSupportDetails.h"
+#include "VulkanDebugUtils.h"
+#include "VulkanQueueFamilyIndices.h"
+#include "VulkanSwapchainSupportDetails.h"
 #include "VulkanContext.h"
 
 
@@ -21,12 +21,12 @@ void VulkanDevice::destroy() noexcept
     m_logicalDevice.destroy();
 }
 
-const vk::Device& VulkanDevice::getLogicalDevice() const
+vk::Device VulkanDevice::getLogicalDevice() const
 {
     return m_logicalDevice;
 }
 
-const vk::PhysicalDevice& VulkanDevice::getPhysicalDevice() const
+vk::PhysicalDevice VulkanDevice::getPhysicalDevice() const
 {
     return m_physicalDevice;
 }
@@ -74,9 +74,9 @@ bool VulkanDevice::checkDeviceExtensionsSupport(const vk::PhysicalDevice device)
 
 bool VulkanDevice::isDeviceSuitable(const vk::PhysicalDevice device)
 {
-    const auto indices = QueueFamilyIndices::FindQueueFamilies(device, VulkanContext::Get().getSurface());
+    const auto indices = VulkanQueueFamilyIndices::FindQueueFamilies(device, VulkanContext::Get().getSurface());
     const bool extensionsSupported = checkDeviceExtensionsSupport(device);
-    const auto swapChainSupportDetails = SwapChainSupportDetails::QuerySwapChainSupport(device, VulkanContext::Get().getSurface());
+    const auto swapChainSupportDetails = VulkanSwapchainSupportDetails::QuerySwapChainSupport(device, VulkanContext::Get().getSurface());
 
     return indices.isComplete() && extensionsSupported && swapChainSupportDetails.isAdequate();
 }
@@ -115,7 +115,7 @@ vk::PhysicalDevice VulkanDevice::pickPhysicalDevice(const std::vector<vk::Physic
 
 void VulkanDevice::createLogicalDevice(const vk::PhysicalDevice physicalDevice)
 {
-    const auto indices = QueueFamilyIndices::FindQueueFamilies(m_physicalDevice, VulkanContext::Get().getSurface());
+    const auto indices = VulkanQueueFamilyIndices::FindQueueFamilies(m_physicalDevice, VulkanContext::Get().getSurface());
     std::set<std::uint32_t> uniqueQueueFamilies = indices.getUniqueIndices();
 
     std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
@@ -145,7 +145,7 @@ void VulkanDevice::createLogicalDevice(const vk::PhysicalDevice physicalDevice)
 
 
     std::vector<const char *> enabledLayers;
-    DebugUtils::AppendInstanceLayers(enabledLayers);
+    VulkanDebugUtils::AppendInstanceLayers(enabledLayers);
     deviceCreateInfo.enabledLayerCount = enabledLayers.size();
     deviceCreateInfo.ppEnabledLayerNames = enabledLayers.data();
 

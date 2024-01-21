@@ -1,7 +1,7 @@
 #include "VulkanSwapchain.h"
 
-#include "QueueFamilyIndices.h"
-#include "SwapChainSupportDetails.h"
+#include "VulkanQueueFamilyIndices.h"
+#include "VulkanSwapchainSupportDetails.h"
 #include "VulkanContext.h"
 
 void VulkanSwapchain::init()
@@ -32,7 +32,7 @@ void VulkanSwapchain::createSwapChain()
     vk::SurfaceKHR surface = VulkanContext::Get().getSurface();
     vk::Device logicalDevice = VulkanContext::Get().getLogicalDevice();
 
-    auto swapChainSupportDetails = SwapChainSupportDetails::QuerySwapChainSupport(physicalDevice, surface);
+    auto swapChainSupportDetails = VulkanSwapchainSupportDetails::QuerySwapChainSupport(physicalDevice, surface);
 
     vk::SurfaceFormatKHR surfaceFormat = swapChainSupportDetails.chooseSurfaceFormat();
     vk::PresentModeKHR presentMode = swapChainSupportDetails.choosePresentMode();
@@ -59,7 +59,7 @@ void VulkanSwapchain::createSwapChain()
         .oldSwapchain = VK_NULL_HANDLE
     };
 
-    QueueFamilyIndices indices = QueueFamilyIndices::FindQueueFamilies(physicalDevice, surface);
+    VulkanQueueFamilyIndices indices = VulkanQueueFamilyIndices::FindQueueFamilies(physicalDevice, surface);
     uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
 
     if (indices.graphicsFamily != indices.presentFamily)

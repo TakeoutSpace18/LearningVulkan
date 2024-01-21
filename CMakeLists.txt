@@ -11,14 +11,14 @@ find_package(fmt REQUIRED)
 add_executable(VulkanApp src/main.cpp
         src/vulkan/VulkanContext.cpp
         src/vulkan/VulkanContext.h
-        src/vulkan/QueueFamilyIndices.h
-        src/vulkan/QueueFamilyIndices.cpp
-        src/vulkan/SwapChainSupportDetails.h
-        src/vulkan/SwapChainSupportDetails.cpp
-        src/vulkan/DebugUtils.cpp
-        src/vulkan/DebugUtils.h
-        src/vulkan/RenderPipeline.cpp
-        src/vulkan/RenderPipeline.h
+        src/vulkan/VulkanQueueFamilyIndices.h
+        src/vulkan/VulkanQueueFamilyIndices.cpp
+        src/vulkan/VulkanSwapchainSupportDetails.h
+        src/vulkan/VulkanSwapchainSupportDetails.cpp
+        src/vulkan/VulkanDebugUtils.cpp
+        src/vulkan/VulkanDebugUtils.h
+        src/vulkan/VulkanRenderPipeline.cpp
+        src/vulkan/VulkanRenderPipeline.h
         src/Application.cpp
         src/Application.h
         src/glfw/GLFWContext.cpp

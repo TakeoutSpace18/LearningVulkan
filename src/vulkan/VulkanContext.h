@@ -22,10 +22,10 @@ public:
     static void Initialize();
     static const VulkanContext& Get();
 
-    NODISCARD const vk::Device& getLogicalDevice() const;
-    NODISCARD const vk::PhysicalDevice& getPhysicalDevice() const;
-    NODISCARD const vk::Instance& getVulkanInstance() const;
-    NODISCARD const vk::SurfaceKHR& getSurface() const;
+    NODISCARD vk::Device getLogicalDevice() const;
+    NODISCARD vk::PhysicalDevice getPhysicalDevice() const;
+    NODISCARD vk::Instance getVulkanInstance() const;
+    NODISCARD vk::SurfaceKHR getSurface() const;
     NODISCARD const VulkanSwapchain& getSwapchain() const;
 
 private:
