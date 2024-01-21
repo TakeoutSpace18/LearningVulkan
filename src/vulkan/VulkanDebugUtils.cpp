@@ -72,7 +72,7 @@ void VulkanDebugUtils::SetupDebugMessenger(vk::Instance instance)
 
 void VulkanDebugUtils::Cleanup()
 {
-    const vk::Instance& instance = VulkanContext::Get().getVulkanInstance();
+    const vk::Instance& instance = VulkanContext::GetVulkanInstance();
     const vk::DispatchLoaderDynamic dldi(instance, vkGetInstanceProcAddr);
     instance.destroyDebugUtilsMessengerEXT(s_debug_messenger, nullptr, dldi);
 }

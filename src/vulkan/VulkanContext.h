@@ -12,7 +12,6 @@
 #include "utility/NonMovable.h"
 #include "utility/Utility.h"
 
-// TODO: extract VulkanDevice class from here
 class VulkanContext : NonCopyable, NonMovable
 {
 public:
@@ -22,11 +21,13 @@ public:
     static void Initialize();
     static const VulkanContext& Get();
 
-    NODISCARD vk::Device getLogicalDevice() const;
-    NODISCARD vk::PhysicalDevice getPhysicalDevice() const;
-    NODISCARD vk::Instance getVulkanInstance() const;
-    NODISCARD vk::SurfaceKHR getSurface() const;
+    NODISCARD static vk::Device GetLogicalDevice();
+    NODISCARD static vk::PhysicalDevice GetPhysicalDevice();
+    NODISCARD static vk::Instance GetVulkanInstance();
+    NODISCARD static vk::SurfaceKHR GetSurface();
+
     NODISCARD const VulkanSwapchain& getSwapchain() const;
+    NODISCARD const VulkanDevice& getDevice() const;
 
 private:
     VulkanContext() = default;

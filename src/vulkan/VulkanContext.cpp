@@ -26,29 +26,34 @@ const VulkanContext& VulkanContext::Get()
     return *s_instance;
 }
 
-vk::Device VulkanContext::getLogicalDevice() const
+vk::Device VulkanContext::GetLogicalDevice()
 {
-    return m_device.getLogicalDevice();
+    return Get().getDevice().getLogicalDevice();
 }
 
-vk::PhysicalDevice VulkanContext::getPhysicalDevice() const
+vk::PhysicalDevice VulkanContext::GetPhysicalDevice()
 {
-    return m_device.getPhysicalDevice();
+    return Get().getDevice().getPhysicalDevice();
 }
 
-vk::Instance VulkanContext::getVulkanInstance() const
+vk::Instance VulkanContext::GetVulkanInstance()
 {
-    return m_instance;
+    return Get().m_instance;
 }
 
-vk::SurfaceKHR VulkanContext::getSurface() const
+vk::SurfaceKHR VulkanContext::GetSurface()
 {
-    return m_surface;
+    return Get().m_surface;
 }
 
 const VulkanSwapchain& VulkanContext::getSwapchain() const
 {
     return m_swapchain;
+}
+
+const VulkanDevice& VulkanContext::getDevice() const
+{
+    return m_device;
 }
 
 std::vector<const char *> VulkanContext::getRequiredInstanceExtensions()

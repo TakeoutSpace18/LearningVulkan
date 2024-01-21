@@ -74,9 +74,9 @@ bool VulkanDevice::checkDeviceExtensionsSupport(const vk::PhysicalDevice device)
 
 bool VulkanDevice::isDeviceSuitable(const vk::PhysicalDevice device)
 {
-    const auto indices = VulkanQueueFamilyIndices::FindQueueFamilies(device, VulkanContext::Get().getSurface());
+    const auto indices = VulkanQueueFamilyIndices::FindQueueFamilies(device, VulkanContext::GetSurface());
     const bool extensionsSupported = checkDeviceExtensionsSupport(device);
-    const auto swapChainSupportDetails = VulkanSwapchainSupportDetails::QuerySwapChainSupport(device, VulkanContext::Get().getSurface());
+    const auto swapChainSupportDetails = VulkanSwapchainSupportDetails::QuerySwapChainSupport(device, VulkanContext::GetSurface());
 
     return indices.isComplete() && extensionsSupported && swapChainSupportDetails.isAdequate();
 }
@@ -115,7 +115,7 @@ vk::PhysicalDevice VulkanDevice::pickPhysicalDevice(const std::vector<vk::Physic
 
 void VulkanDevice::createLogicalDevice(const vk::PhysicalDevice physicalDevice)
 {
-    const auto indices = VulkanQueueFamilyIndices::FindQueueFamilies(m_physicalDevice, VulkanContext::Get().getSurface());
+    const auto indices = VulkanQueueFamilyIndices::FindQueueFamilies(m_physicalDevice, VulkanContext::GetSurface());
     std::set<std::uint32_t> uniqueQueueFamilies = indices.getUniqueIndices();
 
     std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;

@@ -40,7 +40,7 @@ void VulkanRenderPipeline::init()
         vk::DynamicState::eViewport
     };
 
-    vk::PipelineDynamicStateCreateInfo pipelineDynamicStateCreateInfo = {
+    vk::PipelineDynamicStateCreateInfo dynamicStateInfo = {
         .sType = vk::StructureType::ePipelineDynamicStateCreateInfo,
         .pNext = nullptr,
         .flags = vk::PipelineDynamicStateCreateFlags(),
@@ -49,7 +49,7 @@ void VulkanRenderPipeline::init()
     };
 
     // vertices are hardcoded in shaders, so this is blank for now
-    vk::PipelineVertexInputStateCreateInfo pipelineVertexInputStateCreateInfo = {
+    vk::PipelineVertexInputStateCreateInfo vertexInputInfo = {
         .sType = vk::StructureType::ePipelineVertexInputStateCreateInfo,
         .pNext = nullptr,
         .flags = vk::PipelineVertexInputStateCreateFlags(),
@@ -59,7 +59,7 @@ void VulkanRenderPipeline::init()
         .pVertexAttributeDescriptions = nullptr
     };
 
-    vk::PipelineInputAssemblyStateCreateInfo pipelineInputAssemblyStateCreateInfo = {
+    vk::PipelineInputAssemblyStateCreateInfo inputAssemblyInfo = {
         .sType = vk::StructureType::ePipelineInputAssemblyStateCreateInfo,
         .pNext = nullptr,
         .flags = vk::PipelineInputAssemblyStateCreateFlags(),
@@ -83,7 +83,7 @@ void VulkanRenderPipeline::init()
         .extent = swapchainExtent
     };
 
-    vk::PipelineViewportStateCreateInfo pipelineViewportStateCreateInfo = {
+    vk::PipelineViewportStateCreateInfo viewportInfo = {
         .sType = vk::StructureType::ePipelineViewportStateCreateInfo,
         .pNext = nullptr,
         .flags = vk::PipelineViewportStateCreateFlags(),
@@ -93,7 +93,7 @@ void VulkanRenderPipeline::init()
         .pScissors = nullptr
     };
 
-    vk::PipelineRasterizationStateCreateInfo pipelineRasterizationStateCreateInfo = {
+    vk::PipelineRasterizationStateCreateInfo rasterizationInfo = {
         .sType = vk::StructureType::ePipelineRasterizationStateCreateInfo,
         .pNext = nullptr,
         .flags = vk::PipelineRasterizationStateCreateFlags(),
@@ -109,7 +109,7 @@ void VulkanRenderPipeline::init()
         .lineWidth = 1.0f
     };
 
-    vk::PipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo = {
+    vk::PipelineMultisampleStateCreateInfo multisamplingInfo = {
         .sType = vk::StructureType::ePipelineMultisampleStateCreateInfo,
         .pNext = nullptr,
         .flags = vk::PipelineMultisampleStateCreateFlags(),
@@ -133,7 +133,7 @@ void VulkanRenderPipeline::init()
                           vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
     };
 
-    vk::PipelineColorBlendStateCreateInfo pipelineColorBlendStateCreateInfo = {
+    vk::PipelineColorBlendStateCreateInfo colorBlendInfo = {
         .sType = vk::StructureType::ePipelineColorBlendStateCreateInfo,
         .pNext = nullptr,
         .flags = vk::PipelineColorBlendStateCreateFlags(),
@@ -144,7 +144,7 @@ void VulkanRenderPipeline::init()
         .blendConstants = vk::ArrayWrapper1D<float, 4>{}
     };
 
-    vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo = {
+    vk::PipelineLayoutCreateInfo layoutInfo = {
         .sType = vk::StructureType::ePipelineLayoutCreateInfo,
         .pNext = nullptr,
         .flags = vk::PipelineLayoutCreateFlags(),
@@ -154,15 +154,40 @@ void VulkanRenderPipeline::init()
         .pPushConstantRanges = nullptr
     };
 
-    m_pipelineLayout = VulkanContext::Get().getLogicalDevice().createPipelineLayout(pipelineLayoutCreateInfo);
+    m_pipelineLayout = VulkanContext::GetLogicalDevice().createPipelineLayout(layoutInfo);
 
-    VulkanContext::Get().getLogicalDevice().destroyShaderModule(vertexShaderModule);
-    VulkanContext::Get().getLogicalDevice().destroyShaderModule(fragmentShaderModule);
+    vk::GraphicsPipelineCreateInfo pipelineCreateInfo = {
+        .sType = vk::StructureType::eGraphicsPipelineCreateInfo,
+        .pNext = nullptr,
+        .flags = vk::PipelineCreateFlags(),
+        .stageCount = 2,
+        .pStages = shaderStages,
+        .pVertexInputState = &vertexInputInfo,
+        .pInputAssemblyState = &inputAssemblyInfo,
+        .pTessellationState = nullptr,
+        .pViewportState = &viewportInfo,
+        .pRasterizationState = &rasterizationInfo,
+        .pMultisampleState = &multisamplingInfo,
+        .pDepthStencilState = nullptr,
+        .pColorBlendState = &colorBlendInfo,
+        .pDynamicState = &dynamicStateInfo,
+        .layout = m_pipelineLayout,
+        .renderPass = VK_NULL_HANDLE, // render pass is not required cause we're using dynamic rendering
+        .subpass = 0,
+        .basePipelineHandle = VK_NULL_HANDLE,
+        .basePipelineIndex = -1
+    };
+
+    m_graphicsPipeline = VulkanContext::GetLogicalDevice().createGraphicsPipeline(VK_NULL_HANDLE, pipelineCreateInfo).value;
+
+    VulkanContext::GetLogicalDevice().destroyShaderModule(vertexShaderModule);
+    VulkanContext::GetLogicalDevice().destroyShaderModule(fragmentShaderModule);
 }
 
 void VulkanRenderPipeline::destroy() noexcept
 {
-    VulkanContext::Get().getLogicalDevice().destroyPipelineLayout(m_pipelineLayout);
+    VulkanContext::GetLogicalDevice().destroyPipeline(m_graphicsPipeline);
+    VulkanContext::GetLogicalDevice().destroyPipelineLayout(m_pipelineLayout);
 }
 
 std::vector<char> VulkanRenderPipeline::readFile(const std::string& filename)
@@ -193,5 +218,5 @@ vk::ShaderModule VulkanRenderPipeline::createShaderModule(const std::vector<char
         .pCode = reinterpret_cast<const std::uint32_t *>(code.data())
     };
 
-    return VulkanContext::Get().getLogicalDevice().createShaderModule(createInfo);
+    return VulkanContext::GetLogicalDevice().createShaderModule(createInfo);
 }

@@ -12,7 +12,7 @@ void VulkanSwapchain::init()
 
 void VulkanSwapchain::destroy() noexcept
 {
-    const vk::Device logicalDevice = VulkanContext::Get().getLogicalDevice();
+    const vk::Device logicalDevice = VulkanContext::GetLogicalDevice();
 
     for (const auto& imageView : m_swapChainImageViews)
     {
@@ -28,9 +28,9 @@ vk::Extent2D VulkanSwapchain::getExtent() const
 
 void VulkanSwapchain::createSwapChain()
 {
-    vk::PhysicalDevice physicalDevice = VulkanContext::Get().getPhysicalDevice();
-    vk::SurfaceKHR surface = VulkanContext::Get().getSurface();
-    vk::Device logicalDevice = VulkanContext::Get().getLogicalDevice();
+    vk::PhysicalDevice physicalDevice = VulkanContext::GetPhysicalDevice();
+    vk::SurfaceKHR surface = VulkanContext::GetSurface();
+    vk::Device logicalDevice = VulkanContext::GetLogicalDevice();
 
     auto swapChainSupportDetails = VulkanSwapchainSupportDetails::QuerySwapChainSupport(physicalDevice, surface);
 
@@ -115,6 +115,6 @@ void VulkanSwapchain::createImageViews()
             .subresourceRange = imageSubresourceRange
         };
 
-        m_swapChainImageViews[i] = VulkanContext::Get().getLogicalDevice().createImageView(createInfo);
+        m_swapChainImageViews[i] = VulkanContext::GetLogicalDevice().createImageView(createInfo);
     }
 }

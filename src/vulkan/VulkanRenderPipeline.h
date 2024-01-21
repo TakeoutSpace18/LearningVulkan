@@ -20,6 +20,7 @@ private:
 
 private:
     vk::PipelineLayout m_pipelineLayout = VK_NULL_HANDLE;
+    vk::Pipeline m_graphicsPipeline = VK_NULL_HANDLE;
 };
 
 
