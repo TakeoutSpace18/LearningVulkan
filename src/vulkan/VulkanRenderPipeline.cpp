@@ -4,8 +4,9 @@
 #include <ios>
 
 #include "VulkanContext.h"
+#include "VulkanQueueFamilyIndices.h"
 
-void VulkanRenderPipeline::init()
+void VulkanRenderPipeline::createPipeline()
 {
     vk::ShaderModule vertexShaderModule = createShaderModule(readFile("shaders/triangle.vert"));
     vk::ShaderModule fragmentShaderModule = createShaderModule(readFile("shaders/triangle.frag"));
@@ -65,22 +66,6 @@ void VulkanRenderPipeline::init()
         .flags = vk::PipelineInputAssemblyStateCreateFlags(),
         .topology = vk::PrimitiveTopology::eTriangleList,
         .primitiveRestartEnable = VK_FALSE
-    };
-
-    const vk::Extent2D swapchainExtent = VulkanContext::Get().getSwapchain().getExtent();
-
-    vk::Viewport viewport = {
-        .x = 0,
-        .y = 0,
-        .width = static_cast<float>(swapchainExtent.width),
-        .height = static_cast<float>(swapchainExtent.height),
-        .minDepth = 0.0f,
-        .maxDepth = 1.0f
-    };
-
-    vk::Rect2D scissor = {
-        .offset = {0, 0},
-        .extent = swapchainExtent
     };
 
     vk::PipelineViewportStateCreateInfo viewportInfo = {
@@ -178,16 +163,25 @@ void VulkanRenderPipeline::init()
         .basePipelineIndex = -1
     };
 
-    m_graphicsPipeline = VulkanContext::GetLogicalDevice().createGraphicsPipeline(VK_NULL_HANDLE, pipelineCreateInfo).value;
+    m_graphicsPipeline = VulkanContext::GetLogicalDevice().createGraphicsPipeline(VK_NULL_HANDLE, pipelineCreateInfo).
+            value;
 
     VulkanContext::GetLogicalDevice().destroyShaderModule(vertexShaderModule);
     VulkanContext::GetLogicalDevice().destroyShaderModule(fragmentShaderModule);
+}
+
+void VulkanRenderPipeline::init()
+{
+    createPipeline();
+    createCommandPool();
+    createCommandBuffer();
 }
 
 void VulkanRenderPipeline::destroy() noexcept
 {
     VulkanContext::GetLogicalDevice().destroyPipeline(m_graphicsPipeline);
     VulkanContext::GetLogicalDevice().destroyPipelineLayout(m_pipelineLayout);
+    VulkanContext::GetLogicalDevice().destroyCommandPool(m_commandPool);
 }
 
 std::vector<char> VulkanRenderPipeline::readFile(const std::string& filename)
@@ -206,6 +200,105 @@ std::vector<char> VulkanRenderPipeline::readFile(const std::string& filename)
     file.close();
 
     return buffer;
+}
+
+void VulkanRenderPipeline::createCommandPool()
+{
+    VulkanQueueFamilyIndices queueIndices = VulkanQueueFamilyIndices::FindQueueFamilies(
+        VulkanContext::GetPhysicalDevice(),
+        VulkanContext::GetSurface()
+    );
+
+    vk::CommandPoolCreateInfo commandPoolCreateInfo = {
+        .sType = vk::StructureType::eCommandPoolCreateInfo,
+        .pNext = nullptr,
+        .flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
+        .queueFamilyIndex = queueIndices.graphicsFamily.value()
+    };
+
+    m_commandPool = VulkanContext::GetLogicalDevice().createCommandPool(commandPoolCreateInfo);
+}
+
+void VulkanRenderPipeline::createCommandBuffer()
+{
+    vk::CommandBufferAllocateInfo commandBufferAllocateInfo = {
+        .sType = vk::StructureType::eCommandBufferAllocateInfo,
+        .pNext = nullptr,
+        .commandPool = m_commandPool,
+        .level = vk::CommandBufferLevel::ePrimary,
+        .commandBufferCount = 1
+    };
+
+    m_commandBuffer = VulkanContext::GetLogicalDevice().allocateCommandBuffers(commandBufferAllocateInfo).front();
+}
+
+void VulkanRenderPipeline::recordCommandBuffer(vk::CommandBuffer commandBuffer, std::uint32_t imageIndex)
+{
+    vk::CommandBufferBeginInfo beginInfo = {
+        .sType = vk::StructureType::eCommandBufferBeginInfo,
+        .pNext = nullptr,
+        .flags = vk::CommandBufferUsageFlags(),
+        .pInheritanceInfo = nullptr
+    };
+
+    commandBuffer.begin(beginInfo);
+
+    vk::RenderingAttachmentInfo colorAttachmentInfo = {
+        .sType = vk::StructureType::eRenderingAttachmentInfo,
+        .pNext = nullptr,
+        .imageView = VulkanContext::Get().getSwapchain().getImageView(imageIndex),
+        .imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
+        .resolveMode = vk::ResolveModeFlagBits::eNone,
+        .resolveImageView = VK_NULL_HANDLE,
+        .resolveImageLayout = vk::ImageLayout::eUndefined,
+        .loadOp = vk::AttachmentLoadOp::eClear,
+        .storeOp = vk::AttachmentStoreOp::eStore,
+        .clearValue = vk::ClearColorValue(std::array{0.0f, 0.0f, 0.0f, 0.0f})
+    };
+
+    const vk::Extent2D swapchainExtent = VulkanContext::Get().getSwapchain().getExtent();
+
+    vk::RenderingInfo renderingInfo = {
+        .sType = vk::StructureType::eRenderingInfo,
+        .pNext = nullptr,
+        .flags = vk::RenderingFlags(),
+        .renderArea = {0, 0, swapchainExtent.width, swapchainExtent.height},
+        .layerCount = 1,
+        .viewMask = 0,
+        .colorAttachmentCount = 1,
+        .pColorAttachments = &colorAttachmentInfo,
+        .pDepthAttachment = nullptr,
+        .pStencilAttachment = nullptr
+    };
+
+    const vk::DispatchLoaderDynamic dldi(VulkanContext::GetVulkanInstance(), vkGetInstanceProcAddr);
+
+    commandBuffer.beginRenderingKHR(renderingInfo, dldi);
+    commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, m_graphicsPipeline);
+
+
+    const vk::Viewport viewport = {
+        .x = 0,
+        .y = 0,
+        .width = static_cast<float>(swapchainExtent.width),
+        .height = static_cast<float>(swapchainExtent.height),
+        .minDepth = 0.0f,
+        .maxDepth = 1.0f
+    };
+
+    commandBuffer.setViewport(0, 1, &viewport);
+
+    const vk::Rect2D scissor = {
+        .offset = {0, 0},
+        .extent = swapchainExtent
+    };
+
+    commandBuffer.setScissor(0, 1, &scissor);
+
+    commandBuffer.draw(3, 1, 0, 0);
+
+    commandBuffer.endRendering();
+    commandBuffer.end();
 }
 
 vk::ShaderModule VulkanRenderPipeline::createShaderModule(const std::vector<char>& code)

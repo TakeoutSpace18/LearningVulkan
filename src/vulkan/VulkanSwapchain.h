@@ -13,6 +13,7 @@ public:
     void destroy() noexcept;
 
     NODISCARD vk::Extent2D getExtent() const;
+    NODISCARD vk::ImageView getImageView(std::uint32_t index) const;
 
 private:
 

@@ -26,6 +26,11 @@ vk::Extent2D VulkanSwapchain::getExtent() const
     return m_swapChainExtent;
 }
 
+vk::ImageView VulkanSwapchain::getImageView(const std::uint32_t index) const
+{
+    return m_swapChainImageViews[index];
+}
+
 void VulkanSwapchain::createSwapChain()
 {
     vk::PhysicalDevice physicalDevice = VulkanContext::GetPhysicalDevice();
