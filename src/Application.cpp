@@ -17,5 +17,6 @@ void Application::mainLoop()
     while (!GLFWContext::Get().appShouldClose())
     {
         GLFWContext::Get().pollEvents();
+        VulkanContext::DrawFrame();
     }
 }

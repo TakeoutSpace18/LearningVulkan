@@ -31,6 +31,19 @@ vk::ImageView VulkanSwapchain::getImageView(const std::uint32_t index) const
     return m_swapChainImageViews[index];
 }
 
+vk::SwapchainKHR VulkanSwapchain::getHandle() const
+{
+    return m_swapChain;
+}
+
+std::uint32_t VulkanSwapchain::acquireNextImage(std::uint64_t timeout, vk::Semaphore semaphore, vk::Fence fence)
+{
+    std::uint32_t imageIndex;
+    vk::Result result = VulkanContext::GetLogicalDevice().acquireNextImageKHR(m_swapChain, timeout, semaphore, fence, &imageIndex);
+    ASSERT(result == vk::Result::eSuccess && "Acquiring image finished with not success result!")
+    return imageIndex;
+}
+
 void VulkanSwapchain::createSwapChain()
 {
     vk::PhysicalDevice physicalDevice = VulkanContext::GetPhysicalDevice();

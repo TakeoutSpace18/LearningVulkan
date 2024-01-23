@@ -7,6 +7,7 @@
 #include <memory>
 
 #include "VulkanDevice.h"
+#include "VulkanRenderPipeline.h"
 #include "VulkanSwapchain.h"
 #include "utility/NonCopyable.h"
 #include "utility/NonMovable.h"
@@ -19,15 +20,18 @@ public:
     ~VulkanContext();
 
     static void Initialize();
-    static const VulkanContext& Get();
+    static  VulkanContext& Get();
 
     NODISCARD static vk::Device GetLogicalDevice();
     NODISCARD static vk::PhysicalDevice GetPhysicalDevice();
     NODISCARD static vk::Instance GetVulkanInstance();
     NODISCARD static vk::SurfaceKHR GetSurface();
 
-    NODISCARD const VulkanSwapchain& getSwapchain() const;
-    NODISCARD const VulkanDevice& getDevice() const;
+    NODISCARD static VulkanSwapchain& GetSwapchain();
+    NODISCARD static VulkanDevice& GetDevice();
+
+
+    static void DrawFrame();
 
 private:
     VulkanContext() = default;
@@ -45,8 +49,10 @@ private:
 private:
     vk::Instance m_instance = VK_NULL_HANDLE;
     vk::SurfaceKHR m_surface = VK_NULL_HANDLE;
+
     VulkanDevice m_device;
     VulkanSwapchain m_swapchain;
+    VulkanRenderPipeline m_renderPipeline;
 
     static std::unique_ptr<VulkanContext> s_instance;
 };

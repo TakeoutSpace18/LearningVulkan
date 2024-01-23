@@ -8,8 +8,8 @@
 
 void VulkanRenderPipeline::createPipeline()
 {
-    vk::ShaderModule vertexShaderModule = createShaderModule(readFile("shaders/triangle.vert"));
-    vk::ShaderModule fragmentShaderModule = createShaderModule(readFile("shaders/triangle.frag"));
+    vk::ShaderModule vertexShaderModule = createShaderModule(readFile("shaders/vert.spv"));
+    vk::ShaderModule fragmentShaderModule = createShaderModule(readFile("shaders/frag.spv"));
 
     vk::PipelineShaderStageCreateInfo vertexShaderStageCreateInfo = {
         .sType = vk::StructureType::ePipelineShaderStageCreateInfo,
@@ -175,13 +175,76 @@ void VulkanRenderPipeline::init()
     createPipeline();
     createCommandPool();
     createCommandBuffer();
+    createSyncObjects();
 }
 
 void VulkanRenderPipeline::destroy() noexcept
 {
-    VulkanContext::GetLogicalDevice().destroyPipeline(m_graphicsPipeline);
-    VulkanContext::GetLogicalDevice().destroyPipelineLayout(m_pipelineLayout);
-    VulkanContext::GetLogicalDevice().destroyCommandPool(m_commandPool);
+    const vk::Device device = VulkanContext::GetLogicalDevice();
+    device.destroySemaphore(m_imageAvailableSemaphore);
+    device.destroySemaphore(m_renderFinishedSemaphore);
+    device.destroyFence(m_inFlightFence);
+    device.destroyPipeline(m_graphicsPipeline);
+    device.destroyPipelineLayout(m_pipelineLayout);
+    device.destroyCommandPool(m_commandPool);
+}
+
+void VulkanRenderPipeline::drawFrame()
+{
+    const vk::Device device = VulkanContext::GetLogicalDevice();
+    VulkanSwapchain& swapchain = VulkanContext::GetSwapchain();
+
+    vk::Result result = device.waitForFences(1, &m_inFlightFence, VK_TRUE, std::numeric_limits<uint64_t>::max());
+    ASSERT(result == vk::Result::eSuccess && "waitForFences finished with non success result!")
+
+    result = device.resetFences(1, &m_inFlightFence);
+    ASSERT(result == vk::Result::eSuccess && "resetFences finished with non success result!")
+
+    std::uint64_t timeout = std::numeric_limits<std::uint64_t>::max();
+    std::uint32_t imageIndex = swapchain.acquireNextImage(timeout, m_imageAvailableSemaphore, VK_NULL_HANDLE);
+
+    m_commandBuffer.reset(vk::CommandBufferResetFlags());
+    recordCommandBuffer(m_commandBuffer, imageIndex);
+
+    vk::Semaphore waitSemaphores[] = {
+        m_imageAvailableSemaphore
+    };
+
+    vk::PipelineStageFlags waitStages[] = {
+        vk::PipelineStageFlagBits::eColorAttachmentOutput
+    };
+
+    vk::SubmitInfo submitInfo = {
+        .sType = vk::StructureType::eSubmitInfo,
+        .pNext = nullptr,
+        .waitSemaphoreCount = 1,
+        .pWaitSemaphores = waitSemaphores,
+        .pWaitDstStageMask = waitStages,
+        .commandBufferCount = 1,
+        .pCommandBuffers = &m_commandBuffer,
+        .signalSemaphoreCount = 1,
+        .pSignalSemaphores = &m_renderFinishedSemaphore
+    };
+
+    VulkanContext::GetDevice().getQueues().graphicsQueue.submit(submitInfo, m_inFlightFence);
+
+    vk::SwapchainKHR swapchains[] = {
+        VulkanContext::GetSwapchain().getHandle()
+    };
+
+    vk::PresentInfoKHR presentInfo = {
+        .sType = vk::StructureType::ePresentInfoKHR,
+        .pNext = nullptr,
+        .waitSemaphoreCount = 1,
+        .pWaitSemaphores = &m_renderFinishedSemaphore,
+        .swapchainCount = 1,
+        .pSwapchains = swapchains,
+        .pImageIndices = &imageIndex,
+        .pResults = nullptr
+    };
+
+    result = VulkanContext::GetDevice().getQueues().presentQueue.presentKHR(presentInfo);
+    ASSERT(result == vk::Result::eSuccess && "Frame present finished with non success result!");
 }
 
 std::vector<char> VulkanRenderPipeline::readFile(const std::string& filename)
@@ -232,6 +295,21 @@ void VulkanRenderPipeline::createCommandBuffer()
     m_commandBuffer = VulkanContext::GetLogicalDevice().allocateCommandBuffers(commandBufferAllocateInfo).front();
 }
 
+void VulkanRenderPipeline::createSyncObjects()
+{
+    m_imageAvailableSemaphore = VulkanContext::GetLogicalDevice().createSemaphore(vk::SemaphoreCreateInfo());
+    m_renderFinishedSemaphore = VulkanContext::GetLogicalDevice().createSemaphore(vk::SemaphoreCreateInfo());
+
+    // need to create the fence in signaled state to avoid endless blocking
+    // when waiting for it for the first time (when no payload is sent to GPU)
+    vk::FenceCreateInfo inFlightFenceCreateInfo = {
+        .sType = vk::StructureType::eFenceCreateInfo,
+        .pNext = nullptr,
+        .flags = vk::FenceCreateFlagBits::eSignaled
+    };
+    m_inFlightFence = VulkanContext::GetLogicalDevice().createFence(inFlightFenceCreateInfo);
+}
+
 void VulkanRenderPipeline::recordCommandBuffer(vk::CommandBuffer commandBuffer, std::uint32_t imageIndex)
 {
     vk::CommandBufferBeginInfo beginInfo = {
@@ -246,7 +324,7 @@ void VulkanRenderPipeline::recordCommandBuffer(vk::CommandBuffer commandBuffer, 
     vk::RenderingAttachmentInfo colorAttachmentInfo = {
         .sType = vk::StructureType::eRenderingAttachmentInfo,
         .pNext = nullptr,
-        .imageView = VulkanContext::Get().getSwapchain().getImageView(imageIndex),
+        .imageView = VulkanContext::GetSwapchain().getImageView(imageIndex),
         .imageLayout = vk::ImageLayout::eColorAttachmentOptimal,
         .resolveMode = vk::ResolveModeFlagBits::eNone,
         .resolveImageView = VK_NULL_HANDLE,
@@ -256,7 +334,7 @@ void VulkanRenderPipeline::recordCommandBuffer(vk::CommandBuffer commandBuffer, 
         .clearValue = vk::ClearColorValue(std::array{0.0f, 0.0f, 0.0f, 0.0f})
     };
 
-    const vk::Extent2D swapchainExtent = VulkanContext::Get().getSwapchain().getExtent();
+    const vk::Extent2D swapchainExtent = VulkanContext::GetSwapchain().getExtent();
 
     vk::RenderingInfo renderingInfo = {
         .sType = vk::StructureType::eRenderingInfo,

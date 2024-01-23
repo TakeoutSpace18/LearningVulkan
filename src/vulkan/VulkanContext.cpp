@@ -20,7 +20,7 @@ void VulkanContext::Initialize()
     s_instance->init();
 }
 
-const VulkanContext& VulkanContext::Get()
+VulkanContext& VulkanContext::Get()
 {
     ASSERT(s_instance != nullptr && "VulkanContext has not been initialized!");
     return *s_instance;
@@ -28,12 +28,12 @@ const VulkanContext& VulkanContext::Get()
 
 vk::Device VulkanContext::GetLogicalDevice()
 {
-    return Get().getDevice().getLogicalDevice();
+    return GetDevice().getLogicalDevice();
 }
 
 vk::PhysicalDevice VulkanContext::GetPhysicalDevice()
 {
-    return Get().getDevice().getPhysicalDevice();
+    return GetDevice().getPhysicalDevice();
 }
 
 vk::Instance VulkanContext::GetVulkanInstance()
@@ -46,14 +46,19 @@ vk::SurfaceKHR VulkanContext::GetSurface()
     return Get().m_surface;
 }
 
-const VulkanSwapchain& VulkanContext::getSwapchain() const
+VulkanSwapchain& VulkanContext::GetSwapchain()
 {
-    return m_swapchain;
+    return Get().m_swapchain;
 }
 
-const VulkanDevice& VulkanContext::getDevice() const
+VulkanDevice& VulkanContext::GetDevice()
 {
-    return m_device;
+    return Get().m_device;
+}
+
+void VulkanContext::DrawFrame()
+{
+    Get().m_renderPipeline.drawFrame();
 }
 
 std::vector<const char *> VulkanContext::getRequiredInstanceExtensions()
@@ -122,6 +127,7 @@ void VulkanContext::init()
     GLFWContext::Get().createVulkanWindowSurface(m_instance, m_surface);
     m_device.init(m_instance.enumeratePhysicalDevices());
     m_swapchain.init();
+    m_renderPipeline.init();
 }
 
 VulkanContext::~VulkanContext()
@@ -132,6 +138,7 @@ VulkanContext::~VulkanContext()
 void VulkanContext::cleanup()
 {
     VulkanDebugUtils::Cleanup();
+    m_renderPipeline.destroy();
     m_swapchain.destroy();
     m_device.destroy();
     m_instance.destroySurfaceKHR(m_surface);

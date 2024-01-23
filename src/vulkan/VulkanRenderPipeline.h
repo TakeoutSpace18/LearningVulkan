@@ -13,12 +13,15 @@ public:
     void init();
     void destroy() noexcept;
 
+    void drawFrame();
+
 private:
     std::vector<char> readFile(const std::string& filename);
 
     void createPipeline();
     void createCommandPool();
     void createCommandBuffer();
+    void createSyncObjects();
 
     void recordCommandBuffer(vk::CommandBuffer commandBuffer, std::uint32_t imageIndex);
 
@@ -30,6 +33,11 @@ private:
 
     vk::CommandPool m_commandPool;
     vk::CommandBuffer  m_commandBuffer;
+
+    // syncronization
+    vk::Semaphore m_imageAvailableSemaphore;
+    vk::Semaphore m_renderFinishedSemaphore;
+    vk::Fence m_inFlightFence;
 };
 
 

@@ -31,6 +31,11 @@ vk::PhysicalDevice VulkanDevice::getPhysicalDevice() const
     return m_physicalDevice;
 }
 
+const VulkanDevice::DeviceQueues& VulkanDevice::getQueues() const
+{
+    return m_queues;
+}
+
 bool VulkanDevice::isDescreteGPU(const vk::PhysicalDevice device)
 {
     const auto deviceProperties = device.getProperties();
@@ -134,8 +139,12 @@ void VulkanDevice::createLogicalDevice(const vk::PhysicalDevice physicalDevice)
 
     vk::PhysicalDeviceFeatures deviceFeatures{};
 
+    vk::PhysicalDeviceVulkan13Features deviceVulkan13Features;
+    deviceVulkan13Features.dynamicRendering = VK_TRUE;
+
     vk::DeviceCreateInfo deviceCreateInfo = {
         .sType = vk::StructureType::eDeviceCreateInfo,
+        .pNext = &deviceVulkan13Features,
         .queueCreateInfoCount = static_cast<std::uint32_t>(queueCreateInfos.size()),
         .pQueueCreateInfos = queueCreateInfos.data(),
         .enabledExtensionCount = static_cast<uint32_t>(m_deviceExtensions.size()),
@@ -150,6 +159,6 @@ void VulkanDevice::createLogicalDevice(const vk::PhysicalDevice physicalDevice)
     deviceCreateInfo.ppEnabledLayerNames = enabledLayers.data();
 
     m_logicalDevice = m_physicalDevice.createDevice(deviceCreateInfo);
-    m_graphicsQueue = m_logicalDevice.getQueue(indices.graphicsFamily.value(), 0);
-    m_presentQueue = m_logicalDevice.getQueue(indices.presentFamily.value(), 0);
+    m_queues.graphicsQueue = m_logicalDevice.getQueue(indices.graphicsFamily.value(), 0);
+    m_queues.presentQueue = m_logicalDevice.getQueue(indices.presentFamily.value(), 0);
 }
