@@ -12,7 +12,9 @@ public:
     void destroy() noexcept;
 
     NODISCARD vk::Extent2D getExtent() const;
+    NODISCARD vk::Format getFormat() const;
     NODISCARD vk::ImageView getImageView(std::uint32_t index) const;
+    NODISCARD vk::Image getImage(std::uint32_t index) const;
     NODISCARD vk::SwapchainKHR getHandle() const;
 
     std::uint32_t acquireNextImage(std::uint64_t timeout, vk::Semaphore semaphore, vk::Fence fence);

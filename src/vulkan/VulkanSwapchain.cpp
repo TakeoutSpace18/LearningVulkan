@@ -26,9 +26,19 @@ vk::Extent2D VulkanSwapchain::getExtent() const
     return m_swapChainExtent;
 }
 
+vk::Format VulkanSwapchain::getFormat() const
+{
+    return m_swapChainImageFormat;
+}
+
 vk::ImageView VulkanSwapchain::getImageView(const std::uint32_t index) const
 {
     return m_swapChainImageViews[index];
+}
+
+vk::Image VulkanSwapchain::getImage(std::uint32_t index) const
+{
+    return m_swapChainImages[index];
 }
 
 vk::SwapchainKHR VulkanSwapchain::getHandle() const

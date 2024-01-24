@@ -141,9 +141,15 @@ void VulkanRenderPipeline::createPipeline()
 
     m_pipelineLayout = VulkanContext::GetLogicalDevice().createPipelineLayout(layoutInfo);
 
+    vk::Format swapchainFormat = VulkanContext::GetSwapchain().getFormat();
+
+    vk::PipelineRenderingCreateInfo pipelineRenderingCreateInfo{};
+    pipelineRenderingCreateInfo.setColorAttachmentCount(1);
+    pipelineRenderingCreateInfo.setPColorAttachmentFormats(&swapchainFormat);
+
     vk::GraphicsPipelineCreateInfo pipelineCreateInfo = {
         .sType = vk::StructureType::eGraphicsPipelineCreateInfo,
-        .pNext = nullptr,
+        .pNext = &pipelineRenderingCreateInfo,
         .flags = vk::PipelineCreateFlags(),
         .stageCount = 2,
         .pStages = shaderStages,
@@ -162,6 +168,7 @@ void VulkanRenderPipeline::createPipeline()
         .basePipelineHandle = VK_NULL_HANDLE,
         .basePipelineIndex = -1
     };
+
 
     m_graphicsPipeline = VulkanContext::GetLogicalDevice().createGraphicsPipeline(VK_NULL_HANDLE, pipelineCreateInfo).
             value;
@@ -321,6 +328,25 @@ void VulkanRenderPipeline::recordCommandBuffer(vk::CommandBuffer commandBuffer, 
 
     commandBuffer.begin(beginInfo);
 
+    vk::ImageMemoryBarrier colorAttachmentBarrier = {
+        .sType = vk::StructureType::eImageMemoryBarrier,
+        .pNext = nullptr,
+        .srcAccessMask = vk::AccessFlags(),
+        .dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite,
+        .oldLayout = vk::ImageLayout::eUndefined,
+        .newLayout = vk::ImageLayout::eColorAttachmentOptimal,
+        .image = VulkanContext::GetSwapchain().getImage(imageIndex),
+        .subresourceRange = vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1)
+    };
+
+    commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput,
+                                  vk::PipelineStageFlagBits::eColorAttachmentOutput,
+                                  vk::DependencyFlags(),
+                                  {},
+                                  {},
+                                  {colorAttachmentBarrier}
+    );
+
     vk::RenderingAttachmentInfo colorAttachmentInfo = {
         .sType = vk::StructureType::eRenderingAttachmentInfo,
         .pNext = nullptr,
@@ -351,7 +377,7 @@ void VulkanRenderPipeline::recordCommandBuffer(vk::CommandBuffer commandBuffer, 
 
     const vk::DispatchLoaderDynamic dldi(VulkanContext::GetVulkanInstance(), vkGetInstanceProcAddr);
 
-    commandBuffer.beginRenderingKHR(renderingInfo, dldi);
+    commandBuffer.beginRendering(renderingInfo, dldi);
     commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, m_graphicsPipeline);
 
 
@@ -376,6 +402,27 @@ void VulkanRenderPipeline::recordCommandBuffer(vk::CommandBuffer commandBuffer, 
     commandBuffer.draw(3, 1, 0, 0);
 
     commandBuffer.endRendering();
+
+    // prepare image for presentation
+    vk::ImageMemoryBarrier presentationBarier = {
+        .sType = vk::StructureType::eImageMemoryBarrier,
+        .pNext = nullptr,
+        .srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite,
+        .dstAccessMask = vk::AccessFlags(),
+        .oldLayout = vk::ImageLayout::eColorAttachmentOptimal,
+        .newLayout = vk::ImageLayout::ePresentSrcKHR,
+        .image = VulkanContext::GetSwapchain().getImage(imageIndex),
+        .subresourceRange = vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1)
+    };
+
+    commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput,
+                                  vk::PipelineStageFlagBits::eBottomOfPipe,
+                                  vk::DependencyFlags(),
+                                  {},
+                                  {},
+                                  {presentationBarier}
+    );
+
     commandBuffer.end();
 }
 
