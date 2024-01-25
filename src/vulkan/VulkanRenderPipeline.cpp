@@ -188,6 +188,10 @@ void VulkanRenderPipeline::init()
 void VulkanRenderPipeline::destroy() noexcept
 {
     const vk::Device device = VulkanContext::GetLogicalDevice();
+
+    // wait until operations on gpu finish
+    device.waitIdle();
+
     device.destroySemaphore(m_imageAvailableSemaphore);
     device.destroySemaphore(m_renderFinishedSemaphore);
     device.destroyFence(m_inFlightFence);
