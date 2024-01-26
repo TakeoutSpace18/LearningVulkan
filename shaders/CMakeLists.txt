@@ -27,6 +27,7 @@ foreach (src IN LISTS SHADER_SOURCES)
             ${Vulkan_GLSLC_EXECUTABLE}
             -o ${SHADER_BINARY_DIR}/${src_filename}.spv
             ${src}
+            DEPENDS ${src}
             OUTPUT ${SHADER_BINARY_DIR}/${src_filename}.spv
             COMMENT "Compiling ${src_filename}"
     )
