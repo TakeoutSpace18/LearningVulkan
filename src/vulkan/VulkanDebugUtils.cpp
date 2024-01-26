@@ -1,7 +1,6 @@
 #include "VulkanDebugUtils.h"
 
 #include <vulkan/vk_enum_string_helper.h>
-#include <vulkan/vk_extension_helper.h>
 #include <set>
 #include <spdlog/spdlog.h>
 

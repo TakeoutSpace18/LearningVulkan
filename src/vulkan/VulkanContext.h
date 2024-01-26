@@ -1,7 +1,6 @@
 #ifndef VULKANAPP_H
 #define VULKANAPP_H
 
-#define VULKAN_HPP_NO_CONSTRUCTORS
 #include <vulkan/vulkan.hpp>
 
 #include <memory>

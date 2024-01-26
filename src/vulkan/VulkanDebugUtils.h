@@ -3,7 +3,6 @@
 
 #include <vector>
 #include <vulkan/vulkan.hpp>
-#include <vulkan/vk_extension_helper.h>
 
 class VulkanDebugUtils
 {

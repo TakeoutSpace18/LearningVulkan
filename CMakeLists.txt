@@ -1,38 +1,38 @@
 cmake_minimum_required(VERSION 3.27)
-project(VulkanApp)
+project(LearningVulkan)
 
 set(CMAKE_CXX_STANDARD 20)
 
-find_package(Vulkan REQUIRED)
+add_subdirectory(shaders)
+
+find_package(Vulkan REQUIRED COMPONENTS glslc)
 find_package(glfw3 REQUIRED)
 find_package(spdlog REQUIRED)
 find_package(fmt REQUIRED)
 
-add_executable(VulkanApp src/main.cpp
-        src/vulkan/VulkanContext.cpp
-        src/vulkan/VulkanContext.h
-        src/vulkan/VulkanQueueFamilyIndices.h
-        src/vulkan/VulkanQueueFamilyIndices.cpp
-        src/vulkan/VulkanSwapchainSupportDetails.h
-        src/vulkan/VulkanSwapchainSupportDetails.cpp
-        src/vulkan/VulkanDebugUtils.cpp
-        src/vulkan/VulkanDebugUtils.h
-        src/vulkan/VulkanRenderPipeline.cpp
-        src/vulkan/VulkanRenderPipeline.h
-        src/Application.cpp
-        src/Application.h
-        src/glfw/GLFWContext.cpp
-        src/glfw/GLFWContext.h
-        src/utility/Utility.h
-        src/utility/NonCopyable.h
-        src/utility/NonMovable.h
-        src/vulkan/VulkanDevice.cpp
-        src/vulkan/VulkanDevice.h
-        src/vulkan/VulkanSwapchain.cpp
-        src/vulkan/VulkanSwapchain.h
+file(GLOB_RECURSE VULKANAPP_SOURCES
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp
 )
-target_link_libraries(VulkanApp Vulkan::Vulkan glfw fmt spdlog)
-target_include_directories(VulkanApp PRIVATE src)
+
+add_executable(VulkanApp ${VULKANAPP_SOURCES})
+
+add_dependencies(VulkanApp CompileShaders)
+
+target_link_libraries(VulkanApp
+        PRIVATE
+        Vulkan::Vulkan
+        glfw
+        fmt
+        spdlog
+)
+target_compile_definitions(VulkanApp
+        PRIVATE
+        VULKAN_HPP_NO_CONSTRUCTORS # in order to use designated initializers
+)
+target_include_directories(VulkanApp
+        PRIVATE
+        src
+)
 
 target_precompile_headers(VulkanApp PRIVATE
         # containers

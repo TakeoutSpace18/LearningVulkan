@@ -1,14 +1,10 @@
 #include "VulkanContext.h"
 
-#define VULKAN_HPP_NO_CONSTRUCTORS
 #include <vulkan/vulkan.hpp>
 
-#include <set>
 #include <spdlog/spdlog.h>
 
 #include "VulkanDebugUtils.h"
-#include "VulkanQueueFamilyIndices.h"
-#include "VulkanSwapchainSupportDetails.h"
 #include "glfw/GLFWContext.h"
 #include "utility/Utility.h"
 

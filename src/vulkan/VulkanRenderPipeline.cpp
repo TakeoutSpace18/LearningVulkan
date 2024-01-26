@@ -8,8 +8,8 @@
 
 void VulkanRenderPipeline::createPipeline()
 {
-    vk::ShaderModule vertexShaderModule = createShaderModule(readFile("shaders/vert.spv"));
-    vk::ShaderModule fragmentShaderModule = createShaderModule(readFile("shaders/frag.spv"));
+    vk::ShaderModule vertexShaderModule = createShaderModule(readFile("shaders/triangle.vert.spv"));
+    vk::ShaderModule fragmentShaderModule = createShaderModule(readFile("shaders/triangle.frag.spv"));
 
     vk::PipelineShaderStageCreateInfo vertexShaderStageCreateInfo = {
         .sType = vk::StructureType::ePipelineShaderStageCreateInfo,
