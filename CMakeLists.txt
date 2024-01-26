@@ -3,6 +3,7 @@ project(LearningVulkan)
 
 set(CMAKE_CXX_STANDARD 20)
 
+include(cmake/ccache.cmake)
 add_subdirectory(shaders)
 
 find_package(Vulkan REQUIRED COMPONENTS glslc)
