@@ -19,7 +19,7 @@ public:
 
     static constexpr bool ValidationLayersEnabled()
     {
-        return m_enable_validation_layers;
+        return s_enableValidationLayers;
     }
 
 private:
@@ -29,20 +29,23 @@ private:
         const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
         void* pUserData);
 
-    static bool CheckValidationLayerSupport();
+    static bool CheckLayerSupport(const char* requiredLayerName);
 
 private:
     inline static vk::DebugUtilsMessengerEXT s_debug_messenger = VK_NULL_HANDLE;
 
     inline const static std::vector<const char *> s_validation_layers = {
-        "VK_LAYER_KHRONOS_validation"
+        "VK_LAYER_KHRONOS_validation",
     };
 
 #ifdef NDEBUG
-    static constexpr bool m_enable_validation_layers = false;
+    static constexpr bool s_enableValidationLayers = false;
 #else
-    static constexpr bool m_enable_validation_layers = true;
+    static constexpr bool s_enableValidationLayers = true;
 #endif
+
+    static constexpr bool s_enableMesaOverlay = true;
+    inline static const char* s_MesaOverlayLayerName = "VK_LAYER_MESA_overlay";
 };
 
 

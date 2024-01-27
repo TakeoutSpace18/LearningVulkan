@@ -7,9 +7,9 @@
 #include "VulkanContext.h"
 
 VkBool32 VulkanDebugUtils::debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-                                   VkDebugUtilsMessageTypeFlagsEXT messageType,
-                                   const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-                                   void* pUserData)
+                                         VkDebugUtilsMessageTypeFlagsEXT messageType,
+                                         const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+                                         void* pUserData)
 {
     switch (messageSeverity)
     {
@@ -31,16 +31,17 @@ VkBool32 VulkanDebugUtils::debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT 
     return VK_FALSE;
 }
 
-bool VulkanDebugUtils::CheckValidationLayerSupport()
+bool VulkanDebugUtils::CheckLayerSupport(const char* requiredLayerName)
 {
-    std::set<std::string> requiredLayers(s_validation_layers.begin(), s_validation_layers.end());
-
     for (const auto& instanceLayerProperties : vk::enumerateInstanceLayerProperties())
     {
-        requiredLayers.erase(instanceLayerProperties.layerName);
+        if (std::strcmp(instanceLayerProperties.layerName, requiredLayerName) == 0)
+        {
+            return true;
+        }
     }
 
-    return requiredLayers.empty();
+    return false;
 }
 
 void VulkanDebugUtils::PopulateDebugMessengerCreateInfo(vk::DebugUtilsMessengerCreateInfoEXT& createInfo)
@@ -84,18 +85,33 @@ void VulkanDebugUtils::AppendRequiredInstanceExtensions(std::vector<const char *
     }
 }
 
-void VulkanDebugUtils::AppendInstanceLayers(std::vector<const char*>& instanceLayers)
+void VulkanDebugUtils::AppendInstanceLayers(std::vector<const char *>& instanceLayers)
 {
     if constexpr (ValidationLayersEnabled())
     {
-        if (!CheckValidationLayerSupport())
-        {
-            throw std::runtime_error("validation layers requested, but not available!");
-        }
+            for (const char* layer : s_validation_layers)
+            {
+                instanceLayers.push_back(layer);
+                if (CheckLayerSupport(layer))
+                {
+                    instanceLayers.push_back(layer);
+                }
+                else
+                {
+                    spdlog::error("Layer {} is not available!", layer);
+                }
+            }
+    }
 
-        for (const char* layer : s_validation_layers)
+    if constexpr (s_enableMesaOverlay)
+    {
+        if (CheckLayerSupport(s_MesaOverlayLayerName))
         {
-            instanceLayers.push_back(layer);
+            instanceLayers.push_back(s_MesaOverlayLayerName);
+        }
+        else
+        {
+            spdlog::error("Layer {} is not available!", s_MesaOverlayLayerName);
         }
     }
 }
