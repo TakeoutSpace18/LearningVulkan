@@ -7,9 +7,10 @@ include(cmake/ccache.cmake)
 add_subdirectory(shaders)
 
 find_package(Vulkan REQUIRED COMPONENTS glslc)
-find_package(glfw3 REQUIRED)
-find_package(spdlog REQUIRED)
-find_package(fmt REQUIRED)
+find_package(glfw3 CONFIG REQUIRED)
+find_package(spdlog CONFIG REQUIRED)
+find_package(glm CONFIG REQUIRED)
+find_package(fmt CONFIG REQUIRED)
 
 file(GLOB_RECURSE VULKANAPP_SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp
@@ -23,8 +24,9 @@ target_link_libraries(VulkanApp
         PRIVATE
         Vulkan::Vulkan
         glfw
-        fmt
-        spdlog
+        glm::glm
+        fmt::fmt
+        spdlog::spdlog
 )
 target_compile_definitions(VulkanApp
         PRIVATE
@@ -39,6 +41,7 @@ target_precompile_headers(VulkanApp PRIVATE
         # containers
         <set>
         <vector>
+        <array>
         <map>
         <unordered_map>
         <string>
@@ -53,9 +56,13 @@ target_precompile_headers(VulkanApp PRIVATE
         <limits>
         <algorithm>
         <cstdint>
+        <cstddef>
 
         # logging
         <spdlog/spdlog.h>
+
+        # vulkan
+        <vulkan/vulkan.hpp>
 )
 
 set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CMAKE_COMMAND} -E time")

@@ -5,6 +5,7 @@
 
 #include "VulkanContext.h"
 #include "VulkanQueueFamilyIndices.h"
+#include "VulkanVertexBuffer.h"
 
 void VulkanRenderPipeline::createPipeline()
 {
@@ -49,15 +50,17 @@ void VulkanRenderPipeline::createPipeline()
         .pDynamicStates = dynamicStates.data()
     };
 
-    // vertices are hardcoded in shaders, so this is blank for now
+    auto bindingDescription = VulkanVertex::GetBindingDescription();
+    auto attributeDescriptions = VulkanVertex::GetAttributeDescriptions();
+
     vk::PipelineVertexInputStateCreateInfo vertexInputInfo = {
         .sType = vk::StructureType::ePipelineVertexInputStateCreateInfo,
         .pNext = nullptr,
         .flags = vk::PipelineVertexInputStateCreateFlags(),
-        .vertexBindingDescriptionCount = 0,
-        .pVertexBindingDescriptions = nullptr,
-        .vertexAttributeDescriptionCount = 0,
-        .pVertexAttributeDescriptions = nullptr
+        .vertexBindingDescriptionCount = 1,
+        .pVertexBindingDescriptions = &bindingDescription,
+        .vertexAttributeDescriptionCount = attributeDescriptions.size(),
+        .pVertexAttributeDescriptions = attributeDescriptions.data()
     };
 
     vk::PipelineInputAssemblyStateCreateInfo inputAssemblyInfo = {
@@ -403,7 +406,14 @@ void VulkanRenderPipeline::recordCommandBuffer(vk::CommandBuffer commandBuffer, 
 
     commandBuffer.setScissor(0, 1, &scissor);
 
-    commandBuffer.draw(3, 1, 0, 0);
+    static VulkanVertexBuffer vertexBuffer = {{
+        {{0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}},
+        {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
+        {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
+    }};
+
+    commandBuffer.bindVertexBuffers(0, {vertexBuffer.getHandle()}, {0});
+    commandBuffer.draw(vertexBuffer.getVertexCount(), 1, 0, 0);
 
     commandBuffer.endRendering();
 
