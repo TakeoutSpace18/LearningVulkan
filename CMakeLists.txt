@@ -3,38 +3,40 @@ project(LearningVulkan)
 
 set(CMAKE_CXX_STANDARD 20)
 
+# use compiler cache
 include(cmake/ccache.cmake)
-add_subdirectory(shaders)
 
-find_package(Vulkan REQUIRED COMPONENTS glslc)
-find_package(glfw3 CONFIG REQUIRED)
-find_package(spdlog CONFIG REQUIRED)
-find_package(glm CONFIG REQUIRED)
-find_package(fmt CONFIG REQUIRED)
+add_subdirectory(shaders)
 
 file(GLOB_RECURSE VULKANAPP_SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp
 )
 
 add_executable(VulkanApp ${VULKANAPP_SOURCES})
-
 add_dependencies(VulkanApp CompileShaders)
+target_include_directories(VulkanApp PRIVATE src)
 
-target_link_libraries(VulkanApp
-        PRIVATE
-        Vulkan::Vulkan
-        glfw
-        glm::glm
-        fmt::fmt
-        spdlog::spdlog
-)
+# dependencies
+set(THIRDPARTY_DIR third-party)
+
+# glfw
+add_subdirectory(${THIRDPARTY_DIR}/glfw)
+target_link_libraries(VulkanApp PRIVATE glfw)
+
+# spdlog
+add_subdirectory(${THIRDPARTY_DIR}/spdlog)
+target_link_libraries(VulkanApp PRIVATE spdlog::spdlog)
+
+# glm
+add_subdirectory(${THIRDPARTY_DIR}/glm)
+target_link_libraries(VulkanApp PRIVATE glm::glm)
+
+# Vulkan
+find_package(Vulkan REQUIRED COMPONENTS glslc)
+target_link_libraries(VulkanApp PRIVATE Vulkan::Vulkan)
 target_compile_definitions(VulkanApp
         PRIVATE
         VULKAN_HPP_NO_CONSTRUCTORS # in order to use designated initializers
-)
-target_include_directories(VulkanApp
-        PRIVATE
-        src
 )
 
 target_precompile_headers(VulkanApp PRIVATE
