@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.27)
+cmake_minimum_required(VERSION 3.16.3)
 project(shaders)
 
 find_package(Vulkan REQUIRED COMPONENTS glslc)
