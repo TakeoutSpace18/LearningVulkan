@@ -1,6 +1,7 @@
 #ifndef VULKANVERTEXBUFFER_H
 #define VULKANVERTEXBUFFER_H
 
+#include <vk_mem_alloc.h>
 #include <vulkan/vulkan.hpp>
 #include <glm/glm.hpp>
 #include <utility/Utility.h>
@@ -32,7 +33,7 @@ private:
 
 private:
     vk::Buffer m_buffer;
-    vk::DeviceMemory m_bufferMemory;
+    VmaAllocation  m_allocation;
 
     std::size_t m_vertexCount;
 };

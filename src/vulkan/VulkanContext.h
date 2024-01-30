@@ -2,6 +2,7 @@
 #define VULKANAPP_H
 
 #include <vulkan/vulkan.hpp>
+#include <vk_mem_alloc.h>
 
 #include <memory>
 
@@ -16,7 +17,7 @@ class VulkanContext : NonCopyable, NonMovable
 {
 public:
 
-    ~VulkanContext();
+    ~VulkanContext() noexcept;
 
     static void Initialize();
     static  VulkanContext& Get();
@@ -29,6 +30,7 @@ public:
     NODISCARD static VulkanSwapchain& GetSwapchain();
     NODISCARD static VulkanDevice& GetDevice();
 
+    NODISCARD static VmaAllocator GetVmaAllocator();
 
     static void DrawFrame();
 
@@ -36,18 +38,19 @@ private:
     VulkanContext() = default;
 
     void init();
-
-    void cleanup();
-
-    std::vector<const char*> getRequiredInstanceExtensions();
+    void cleanup() noexcept;
 
     void createInstance();
+    void createVmaAllocator();
 
+    std::vector<const char*> getRequiredInstanceExtensions();
     static void LogSupportedInstanceExtensions();
 
 private:
     vk::Instance m_instance = VK_NULL_HANDLE;
     vk::SurfaceKHR m_surface = VK_NULL_HANDLE;
+
+    VmaAllocator m_vmaAllocator = VK_NULL_HANDLE;
 
     VulkanDevice m_device;
     VulkanSwapchain m_swapchain;
