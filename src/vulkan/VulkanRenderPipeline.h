@@ -2,6 +2,7 @@
 #define VULKANRENDERPIPELINE_H
 #include <string>
 #include <vector>
+#include <utility/Utility.h>
 
 #include <vulkan/vulkan.hpp>
 
@@ -14,11 +15,13 @@ public:
 
     void drawFrame();
 
+    // TODO: use different command pools for different purposes
+    NODISCARD vk::CommandPool getCommandPool() const;
+
 private:
     std::vector<char> readFile(const std::string& filename);
 
     void createPipeline();
-    void createCommandPool();
     void createCommandBuffer();
     void createSyncObjects();
 
@@ -30,7 +33,6 @@ private:
     vk::PipelineLayout m_pipelineLayout = VK_NULL_HANDLE;
     vk::Pipeline m_graphicsPipeline = VK_NULL_HANDLE;
 
-    vk::CommandPool m_commandPool;
     vk::CommandBuffer  m_commandBuffer;
 
     // syncronization

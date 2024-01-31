@@ -183,7 +183,6 @@ void VulkanRenderPipeline::createPipeline()
 void VulkanRenderPipeline::init()
 {
     createPipeline();
-    createCommandPool();
     createCommandBuffer();
     createSyncObjects();
 }
@@ -200,7 +199,6 @@ void VulkanRenderPipeline::destroy() noexcept
     device.destroyFence(m_inFlightFence);
     device.destroyPipeline(m_graphicsPipeline);
     device.destroyPipelineLayout(m_pipelineLayout);
-    device.destroyCommandPool(m_commandPool);
 }
 
 void VulkanRenderPipeline::drawFrame()
@@ -279,29 +277,12 @@ std::vector<char> VulkanRenderPipeline::readFile(const std::string& filename)
     return buffer;
 }
 
-void VulkanRenderPipeline::createCommandPool()
-{
-    VulkanQueueFamilyIndices queueIndices = VulkanQueueFamilyIndices::FindQueueFamilies(
-        VulkanContext::GetPhysicalDevice(),
-        VulkanContext::GetSurface()
-    );
-
-    vk::CommandPoolCreateInfo commandPoolCreateInfo = {
-        .sType = vk::StructureType::eCommandPoolCreateInfo,
-        .pNext = nullptr,
-        .flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
-        .queueFamilyIndex = queueIndices.graphicsFamily.value()
-    };
-
-    m_commandPool = VulkanContext::GetLogicalDevice().createCommandPool(commandPoolCreateInfo);
-}
-
 void VulkanRenderPipeline::createCommandBuffer()
 {
     vk::CommandBufferAllocateInfo commandBufferAllocateInfo = {
         .sType = vk::StructureType::eCommandBufferAllocateInfo,
         .pNext = nullptr,
-        .commandPool = m_commandPool,
+        .commandPool = VulkanContext::GetDevice().getCommandPool(),
         .level = vk::CommandBufferLevel::ePrimary,
         .commandBufferCount = 1
     };

@@ -29,6 +29,11 @@ private:
     void create(const std::vector<VulkanVertex>& vertices);
     void cleanup() noexcept;
 
+    // TODO: use single heap buffer for all staging data
+    std::pair<vk::Buffer, VmaAllocation> createStagingBuffer(vk::DeviceSize bufferSize, VmaAllocationInfo* allocationInfo);
+    std::pair<vk::Buffer, VmaAllocation> createDeviceLocalBuffer(vk::DeviceSize bufferSize, VmaAllocationInfo* allocationInfo);
+    void copyBuffer(vk::Buffer src, vk::Buffer dst, vk::DeviceSize size);
+
     std::uint32_t findMemoryType(std::uint32_t typeFilter, vk::MemoryPropertyFlags properties);
 
 private:

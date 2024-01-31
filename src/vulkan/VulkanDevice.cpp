@@ -14,10 +14,14 @@ void VulkanDevice::init(const std::vector<vk::PhysicalDevice>& availableDevices)
     m_physicalDevice = pickPhysicalDevice(availableDevices);
     logPhysicalDeviceInfo(m_physicalDevice);
     createLogicalDevice(m_physicalDevice);
+    createVmaAllocator();
+    createCommandPool();
 }
 
 void VulkanDevice::destroy() noexcept
 {
+    m_logicalDevice.destroyCommandPool(m_commandPool);
+    vmaDestroyAllocator(m_vmaAllocator);
     m_logicalDevice.destroy();
 }
 
@@ -31,9 +35,20 @@ vk::PhysicalDevice VulkanDevice::getPhysicalDevice() const
     return m_physicalDevice;
 }
 
+vk::CommandPool VulkanDevice::getCommandPool() const
+{
+    return m_commandPool;
+}
+
 const VulkanDevice::DeviceQueues& VulkanDevice::getQueues() const
 {
     return m_queues;
+}
+
+VmaAllocator VulkanDevice::getVmaAllocator() const
+{
+    ASSERT(m_vmaAllocator != VK_NULL_HANDLE && "Vulkan memory allocator is not yet initialized!");
+    return m_vmaAllocator;
 }
 
 bool VulkanDevice::isDescreteGPU(const vk::PhysicalDevice device)
@@ -161,4 +176,41 @@ void VulkanDevice::createLogicalDevice(const vk::PhysicalDevice physicalDevice)
     m_logicalDevice = m_physicalDevice.createDevice(deviceCreateInfo);
     m_queues.graphicsQueue = m_logicalDevice.getQueue(indices.graphicsFamily.value(), 0);
     m_queues.presentQueue = m_logicalDevice.getQueue(indices.presentFamily.value(), 0);
+}
+
+void VulkanDevice::createVmaAllocator()
+{
+    VmaVulkanFunctions vulkanFunctions = {};
+    vulkanFunctions.vkGetInstanceProcAddr = &vkGetInstanceProcAddr;
+    vulkanFunctions.vkGetDeviceProcAddr = &vkGetDeviceProcAddr;
+
+    const VmaAllocatorCreateInfo createInfo = {
+        .flags = VmaAllocatorCreateFlags(), // add extensions here if ones are used
+        .physicalDevice = m_physicalDevice,
+        .device = m_logicalDevice,
+        .pVulkanFunctions = &vulkanFunctions,
+        .instance = VulkanContext::GetVulkanInstance(),
+        .vulkanApiVersion = VK_API_VERSION_1_3,
+    };
+
+    VkResult result = vmaCreateAllocator(&createInfo, &m_vmaAllocator);
+    if (result != VK_SUCCESS)
+        throw std::runtime_error("Failed to create Vulkan memory allocator!");
+}
+
+void VulkanDevice::createCommandPool()
+{
+    VulkanQueueFamilyIndices queueIndices = VulkanQueueFamilyIndices::FindQueueFamilies(
+        VulkanContext::GetPhysicalDevice(),
+        VulkanContext::GetSurface()
+    );
+
+    vk::CommandPoolCreateInfo commandPoolCreateInfo = {
+        .sType = vk::StructureType::eCommandPoolCreateInfo,
+        .pNext = nullptr,
+        .flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
+        .queueFamilyIndex = queueIndices.graphicsFamily.value()
+    };
+
+    m_commandPool = VulkanContext::GetLogicalDevice().createCommandPool(commandPoolCreateInfo);
 }

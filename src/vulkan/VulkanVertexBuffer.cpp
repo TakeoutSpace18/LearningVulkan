@@ -58,17 +58,14 @@ std::size_t VulkanVertexBuffer::getVertexCount() const
     return m_vertexCount;
 }
 
-void VulkanVertexBuffer::create(const std::vector<VulkanVertex>& vertices)
+std::pair<vk::Buffer, VmaAllocation> VulkanVertexBuffer::createStagingBuffer(vk::DeviceSize bufferSize, VmaAllocationInfo* allocationInfo)
 {
-    m_vertexCount = vertices.size();
-    vk::DeviceSize bufferSize = sizeof(vertices.front()) * vertices.size();
-
     vk::BufferCreateInfo bufferCreateInfo = {
         .sType = vk::StructureType::eBufferCreateInfo,
         .pNext = nullptr,
         .flags = vk::BufferCreateFlags(),
         .size = bufferSize,
-        .usage = vk::BufferUsageFlagBits::eVertexBuffer,
+        .usage = vk::BufferUsageFlagBits::eTransferSrc,
         .sharingMode = vk::SharingMode::eExclusive,
         .queueFamilyIndexCount = 0, // this is blank because buffer is not shared between queues
         .pQueueFamilyIndices = nullptr
@@ -79,24 +76,115 @@ void VulkanVertexBuffer::create(const std::vector<VulkanVertex>& vertices)
                                  VMA_ALLOCATION_CREATE_MAPPED_BIT;
     allocationCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
 
-    VmaAllocationInfo allocationInfo;
-    VkResult result = vmaCreateBuffer(VulkanContext::GetVmaAllocator(),
+    vk::Buffer buffer;
+    VmaAllocation allocation;
+    VkResult result = vmaCreateBuffer(VulkanContext::GetDevice().getVmaAllocator(),
                                       (VkBufferCreateInfo *) &bufferCreateInfo,
                                       &allocationCreateInfo,
-                                      (VkBuffer *) &m_buffer,
-                                      &m_allocation,
-                                      &allocationInfo);
+                                      (VkBuffer *) &buffer,
+                                      &allocation,
+                                      allocationInfo);
+
     if (result != VK_SUCCESS)
-    {
-        throw std::runtime_error("vmaCreateBuffer failed!");
-    }
-    std::memcpy(allocationInfo.pMappedData, vertices.data(), bufferSize);
+        throw std::runtime_error("Failed to create staging vertex buffer!");
+
+    return std::make_pair(buffer, allocation);
+}
+
+std::pair<vk::Buffer, VmaAllocation> VulkanVertexBuffer::createDeviceLocalBuffer(vk::DeviceSize bufferSize, VmaAllocationInfo* allocationInfo)
+{
+    vk::BufferCreateInfo bufferCreateInfo = {
+        .sType = vk::StructureType::eBufferCreateInfo,
+        .size = bufferSize,
+        .usage = vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
+        .sharingMode = vk::SharingMode::eExclusive,
+    };
+
+    VmaAllocationCreateInfo allocationCreateInfo = {};
+    allocationCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
+
+    VmaAllocation allocation;
+    vk::Buffer buffer;
+    VkResult result = vmaCreateBuffer(VulkanContext::GetDevice().getVmaAllocator(),
+                                      (VkBufferCreateInfo *) &bufferCreateInfo,
+                                      &allocationCreateInfo,
+                                      (VkBuffer *) &buffer,
+                                      &allocation,
+                                      allocationInfo);
+
+    if (result != VK_SUCCESS)
+        throw std::runtime_error("Failed to create device local vertex buffer!");
+
+    return std::make_pair(buffer, allocation);
+}
+
+void VulkanVertexBuffer::copyBuffer(vk::Buffer src, vk::Buffer dst, vk::DeviceSize size)
+{
+    vk::CommandBufferAllocateInfo allocateInfo = {
+        .sType = vk::StructureType::eCommandBufferAllocateInfo,
+        .commandPool = VulkanContext::GetDevice().getCommandPool(),
+        .level = vk::CommandBufferLevel::ePrimary,
+        .commandBufferCount = 1
+    };
+
+    vk::CommandBuffer commandBuffer = VulkanContext::GetLogicalDevice().allocateCommandBuffers(allocateInfo).front();
+
+    vk::CommandBufferBeginInfo beginInfo = {
+        .sType = vk::StructureType::eCommandBufferBeginInfo,
+        .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit,
+    };
+
+    commandBuffer.begin(beginInfo);
+
+    const vk::BufferCopy copyRegion = {
+        .srcOffset = 0,
+        .dstOffset = 0,
+        .size = size
+    };
+
+    commandBuffer.copyBuffer(src, dst, copyRegion);
+
+    commandBuffer.end();
+
+    vk::SubmitInfo submitInfo = {
+        .sType = vk::StructureType::eSubmitInfo,
+        .commandBufferCount = 1,
+        .pCommandBuffers = &commandBuffer,
+    };
+
+    vk::FenceCreateInfo fenceCreateInfo = {
+        .sType = vk::StructureType::eFenceCreateInfo
+    };
+
+    vk::Fence transferCompletedFence = VulkanContext::GetLogicalDevice().createFence(fenceCreateInfo);
+    VulkanContext::GetDevice().getQueues().graphicsQueue.submit({submitInfo}, {transferCompletedFence});
+
+    constexpr std::uint64_t timeout = std::numeric_limits<std::uint64_t>::max();
+    vk::Result result = VulkanContext::GetLogicalDevice().waitForFences({transferCompletedFence}, VK_TRUE, timeout);
+    ASSERT(result == vk::Result::eSuccess);
+
+    VulkanContext::GetLogicalDevice().destroyFence(transferCompletedFence);
+}
+
+void VulkanVertexBuffer::create(const std::vector<VulkanVertex>& vertices)
+{
+    m_vertexCount = vertices.size();
+    const vk::DeviceSize bufferSize = sizeof(vertices.front()) * vertices.size();
+
+    VmaAllocationInfo stagingAllocInfo;
+    auto [stagingBuffer, stagingAllocation] = createStagingBuffer(bufferSize, &stagingAllocInfo);
+    std::memcpy(stagingAllocInfo.pMappedData, vertices.data(), bufferSize);
+
+    std::tie(m_buffer, m_allocation) = createDeviceLocalBuffer(bufferSize, nullptr);
+    copyBuffer(stagingBuffer, m_buffer, bufferSize);
+
+    vmaDestroyBuffer(VulkanContext::GetDevice().getVmaAllocator(), stagingBuffer, stagingAllocation);
 }
 
 void VulkanVertexBuffer::cleanup() noexcept
 {
     VulkanContext::GetLogicalDevice().waitIdle();
-    vmaDestroyBuffer(VulkanContext::GetVmaAllocator(), m_buffer, m_allocation);
+    vmaDestroyBuffer(VulkanContext::GetDevice().getVmaAllocator(), m_buffer, m_allocation);
 }
 
 std::uint32_t VulkanVertexBuffer::findMemoryType(std::uint32_t typeFilter, vk::MemoryPropertyFlags properties)

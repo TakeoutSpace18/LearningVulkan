@@ -2,7 +2,6 @@
 #define VULKANAPP_H
 
 #include <vulkan/vulkan.hpp>
-#include <vk_mem_alloc.h>
 
 #include <memory>
 
@@ -30,8 +29,6 @@ public:
     NODISCARD static VulkanSwapchain& GetSwapchain();
     NODISCARD static VulkanDevice& GetDevice();
 
-    NODISCARD static VmaAllocator GetVmaAllocator();
-
     static void DrawFrame();
 
 private:
@@ -41,7 +38,6 @@ private:
     void cleanup() noexcept;
 
     void createInstance();
-    void createVmaAllocator();
 
     std::vector<const char*> getRequiredInstanceExtensions();
     static void LogSupportedInstanceExtensions();
@@ -49,8 +45,6 @@ private:
 private:
     vk::Instance m_instance = VK_NULL_HANDLE;
     vk::SurfaceKHR m_surface = VK_NULL_HANDLE;
-
-    VmaAllocator m_vmaAllocator = VK_NULL_HANDLE;
 
     VulkanDevice m_device;
     VulkanSwapchain m_swapchain;
