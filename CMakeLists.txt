@@ -31,6 +31,10 @@ target_link_libraries(VulkanApp PRIVATE spdlog::spdlog)
 add_subdirectory(${THIRDPARTY_DIR}/glm)
 target_link_libraries(VulkanApp PRIVATE glm::glm)
 
+# VulkanMemoryAllocator
+add_subdirectory(${THIRDPARTY_DIR}/VulkanMemoryAllocator)
+target_link_libraries(VulkanApp PRIVATE GPUOpen::VulkanMemoryAllocator)
+
 # Vulkan
 find_package(Vulkan REQUIRED COMPONENTS glslc)
 target_link_libraries(VulkanApp PRIVATE Vulkan::Vulkan)

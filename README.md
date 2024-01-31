@@ -6,6 +6,7 @@ Currently, I am following [Vulkan-Tutorial](https://vulkan-tutorial.com/)
 
 ## Useful links
  - [Vulkan chunked specification](https://vulkan.lunarg.com/doc/sdk/1.3.275.0/windows/chunked_spec/index.html)
+ - [VulkanMemoryAllocator documentation](https://gpuopen-librariesandsdks.github.io/VulkanMemoryAllocator/html/index.html)
  - [Vulkan GPU reports database](https://vulkan.gpuinfo.org/listdevices.php)
 
 ## Building on Linux

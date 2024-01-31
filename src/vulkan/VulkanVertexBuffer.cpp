@@ -1,5 +1,7 @@
 #include "VulkanVertexBuffer.h"
 
+#include <vk_mem_alloc.h>
+
 #include "VulkanContext.h"
 
 // --------------- VulkanVertex ---------------
@@ -61,7 +63,7 @@ void VulkanVertexBuffer::create(const std::vector<VulkanVertex>& vertices)
     m_vertexCount = vertices.size();
     vk::DeviceSize bufferSize = sizeof(vertices.front()) * vertices.size();
 
-    vk::BufferCreateInfo createInfo = {
+    vk::BufferCreateInfo bufferCreateInfo = {
         .sType = vk::StructureType::eBufferCreateInfo,
         .pNext = nullptr,
         .flags = vk::BufferCreateFlags(),
@@ -72,33 +74,29 @@ void VulkanVertexBuffer::create(const std::vector<VulkanVertex>& vertices)
         .pQueueFamilyIndices = nullptr
     };
 
-    m_buffer = VulkanContext::GetLogicalDevice().createBuffer(createInfo);
+    VmaAllocationCreateInfo allocationCreateInfo = {};
+    allocationCreateInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT |
+                                 VMA_ALLOCATION_CREATE_MAPPED_BIT;
+    allocationCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
 
-    vk::MemoryRequirements memoryRequirements = VulkanContext::GetLogicalDevice().getBufferMemoryRequirements(m_buffer);
-
-    vk::MemoryAllocateInfo memoryAllocateInfo = {
-        .sType = vk::StructureType::eMemoryAllocateInfo,
-        .pNext = nullptr,
-        .allocationSize = bufferSize,
-        .memoryTypeIndex = findMemoryType(memoryRequirements.memoryTypeBits,
-                                          vk::MemoryPropertyFlagBits::eHostVisible |
-                                          // to ensure that buffer always matches allocated memory
-                                          vk::MemoryPropertyFlagBits::eHostCoherent
-        )
-    };
-
-    m_bufferMemory = VulkanContext::GetLogicalDevice().allocateMemory(memoryAllocateInfo);
-    VulkanContext::GetLogicalDevice().bindBufferMemory(m_buffer, m_bufferMemory, 0);
-
-    void* data = VulkanContext::GetLogicalDevice().mapMemory(m_bufferMemory, 0, bufferSize, vk::MemoryMapFlags());
-    std::memcpy(data, vertices.data(), bufferSize);
-    VulkanContext::GetLogicalDevice().unmapMemory(m_bufferMemory);
+    VmaAllocationInfo allocationInfo;
+    VkResult result = vmaCreateBuffer(VulkanContext::GetVmaAllocator(),
+                                      (VkBufferCreateInfo *) &bufferCreateInfo,
+                                      &allocationCreateInfo,
+                                      (VkBuffer *) &m_buffer,
+                                      &m_allocation,
+                                      &allocationInfo);
+    if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error("vmaCreateBuffer failed!");
+    }
+    std::memcpy(allocationInfo.pMappedData, vertices.data(), bufferSize);
 }
 
 void VulkanVertexBuffer::cleanup() noexcept
 {
-    VulkanContext::GetLogicalDevice().destroyBuffer(m_buffer);
-    VulkanContext::GetLogicalDevice().freeMemory(m_bufferMemory);
+    VulkanContext::GetLogicalDevice().waitIdle();
+    vmaDestroyBuffer(VulkanContext::GetVmaAllocator(), m_buffer, m_allocation);
 }
 
 std::uint32_t VulkanVertexBuffer::findMemoryType(std::uint32_t typeFilter, vk::MemoryPropertyFlags properties)

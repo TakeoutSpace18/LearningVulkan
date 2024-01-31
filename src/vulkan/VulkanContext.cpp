@@ -1,6 +1,7 @@
 #include "VulkanContext.h"
 
 #include <vulkan/vulkan.hpp>
+#include <vk_mem_alloc.h>
 
 #include <spdlog/spdlog.h>
 
@@ -52,6 +53,12 @@ VulkanDevice& VulkanContext::GetDevice()
     return Get().m_device;
 }
 
+VmaAllocator VulkanContext::GetVmaAllocator()
+{
+    ASSERT(Get().m_vmaAllocator != VK_NULL_HANDLE && "Vulkan memory allocator is not yet initialized!");
+    return Get().m_vmaAllocator;
+}
+
 void VulkanContext::DrawFrame()
 {
     Get().m_renderPipeline.drawFrame();
@@ -92,8 +99,7 @@ void VulkanContext::createInstance()
     {
         VulkanDebugUtils::PopulateDebugMessengerCreateInfo(debugCreateInfo);
         createInfo.pNext = &debugCreateInfo;
-    }
-    else
+    } else
     {
         createInfo.pNext = nullptr;
     }
@@ -104,6 +110,26 @@ void VulkanContext::createInstance()
     createInfo.ppEnabledLayerNames = enabledLayers.data();
 
     m_instance = vk::createInstance(createInfo);
+}
+
+void VulkanContext::createVmaAllocator()
+{
+    VmaVulkanFunctions vulkanFunctions = {};
+    vulkanFunctions.vkGetInstanceProcAddr = &vkGetInstanceProcAddr;
+    vulkanFunctions.vkGetDeviceProcAddr = &vkGetDeviceProcAddr;
+
+    const VmaAllocatorCreateInfo createInfo = {
+        .flags = VmaAllocatorCreateFlags(), // add extensions here if ones are used
+        .physicalDevice = m_device.getPhysicalDevice(),
+        .device = m_device.getLogicalDevice(),
+        .pVulkanFunctions = &vulkanFunctions,
+        .instance = m_instance,
+        .vulkanApiVersion = VK_API_VERSION_1_3,
+    };
+
+    VkResult result = vmaCreateAllocator(&createInfo, &m_vmaAllocator);
+    if (result != VK_SUCCESS)
+        throw std::runtime_error("Failed to create Vulkan memory allocator!");
 }
 
 void VulkanContext::LogSupportedInstanceExtensions()
@@ -122,20 +148,22 @@ void VulkanContext::init()
     LogSupportedInstanceExtensions();
     GLFWContext::Get().createVulkanWindowSurface(m_instance, m_surface);
     m_device.init(m_instance.enumeratePhysicalDevices());
+    createVmaAllocator();
     m_swapchain.init();
     m_renderPipeline.init();
 }
 
-VulkanContext::~VulkanContext()
+VulkanContext::~VulkanContext() noexcept
 {
     cleanup();
 }
 
-void VulkanContext::cleanup()
+void VulkanContext::cleanup() noexcept
 {
     VulkanDebugUtils::Cleanup();
     m_renderPipeline.destroy();
     m_swapchain.destroy();
+    vmaDestroyAllocator(m_vmaAllocator);
     m_device.destroy();
     m_instance.destroySurfaceKHR(m_surface);
     m_instance.destroy();
