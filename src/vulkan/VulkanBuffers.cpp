@@ -1,6 +1,7 @@
-#include "VulkanVertexBuffer.h"
+#include "VulkanBuffers.h"
 
 #include <vk_mem_alloc.h>
+#include <vulkan/vulkan_enums.hpp>
 
 #include "VulkanContext.h"
 
@@ -36,29 +37,24 @@ std::array<vk::VertexInputAttributeDescription, 2> VulkanVertex::GetAttributeDes
     return descriptions;
 }
 
-// ------------ VulkanVertexBuffer ------------
+// ------------ VulkanBuffer ------------
 
-VulkanVertexBuffer::VulkanVertexBuffer(const std::vector<VulkanVertex>& vertices)
+VulkanBuffer::VulkanBuffer(const void *data, std::size_t size, vk::BufferUsageFlags usageFlags)
 {
-    create(vertices);
+    create(data, size, usageFlags);
 }
 
-VulkanVertexBuffer::~VulkanVertexBuffer()
+VulkanBuffer::~VulkanBuffer() noexcept
 {
     cleanup();
 }
 
-vk::Buffer VulkanVertexBuffer::getHandle() const
+vk::Buffer VulkanBuffer::getHandle() const
 {
     return m_buffer;
 }
 
-std::size_t VulkanVertexBuffer::getVertexCount() const
-{
-    return m_vertexCount;
-}
-
-std::pair<vk::Buffer, VmaAllocation> VulkanVertexBuffer::createStagingBuffer(vk::DeviceSize bufferSize, VmaAllocationInfo* allocationInfo)
+std::pair<vk::Buffer, VmaAllocation> VulkanBuffer::createStagingBuffer(vk::DeviceSize bufferSize, VmaAllocationInfo* allocationInfo)
 {
     vk::BufferCreateInfo bufferCreateInfo = {
         .sType = vk::StructureType::eBufferCreateInfo,
@@ -91,12 +87,15 @@ std::pair<vk::Buffer, VmaAllocation> VulkanVertexBuffer::createStagingBuffer(vk:
     return std::make_pair(buffer, allocation);
 }
 
-std::pair<vk::Buffer, VmaAllocation> VulkanVertexBuffer::createDeviceLocalBuffer(vk::DeviceSize bufferSize, VmaAllocationInfo* allocationInfo)
+std::pair<vk::Buffer, VmaAllocation> VulkanBuffer::createDeviceLocalBuffer(
+    vk::DeviceSize bufferSize,
+    vk::BufferUsageFlags usageFlags,
+    VmaAllocationInfo* allocationInfo)
 {
     vk::BufferCreateInfo bufferCreateInfo = {
         .sType = vk::StructureType::eBufferCreateInfo,
         .size = bufferSize,
-        .usage = vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
+        .usage = usageFlags | vk::BufferUsageFlagBits::eTransferDst,
         .sharingMode = vk::SharingMode::eExclusive,
     };
 
@@ -118,7 +117,7 @@ std::pair<vk::Buffer, VmaAllocation> VulkanVertexBuffer::createDeviceLocalBuffer
     return std::make_pair(buffer, allocation);
 }
 
-void VulkanVertexBuffer::copyBuffer(vk::Buffer src, vk::Buffer dst, vk::DeviceSize size)
+void VulkanBuffer::copyBuffer(vk::Buffer src, vk::Buffer dst, vk::DeviceSize size)
 {
     vk::CommandBufferAllocateInfo allocateInfo = {
         .sType = vk::StructureType::eCommandBufferAllocateInfo,
@@ -166,28 +165,25 @@ void VulkanVertexBuffer::copyBuffer(vk::Buffer src, vk::Buffer dst, vk::DeviceSi
     VulkanContext::GetLogicalDevice().destroyFence(transferCompletedFence);
 }
 
-void VulkanVertexBuffer::create(const std::vector<VulkanVertex>& vertices)
+void VulkanBuffer::create(const void *data, std::size_t size, vk::BufferUsageFlags usageFlags)
 {
-    m_vertexCount = vertices.size();
-    const vk::DeviceSize bufferSize = sizeof(vertices.front()) * vertices.size();
-
     VmaAllocationInfo stagingAllocInfo;
-    auto [stagingBuffer, stagingAllocation] = createStagingBuffer(bufferSize, &stagingAllocInfo);
-    std::memcpy(stagingAllocInfo.pMappedData, vertices.data(), bufferSize);
+    auto [stagingBuffer, stagingAllocation] = createStagingBuffer(size, &stagingAllocInfo);
+    std::memcpy(stagingAllocInfo.pMappedData, data, size);
 
-    std::tie(m_buffer, m_allocation) = createDeviceLocalBuffer(bufferSize, nullptr);
-    copyBuffer(stagingBuffer, m_buffer, bufferSize);
+    std::tie(m_buffer, m_allocation) = createDeviceLocalBuffer(size, usageFlags, nullptr);
+    copyBuffer(stagingBuffer, m_buffer, size);
 
     vmaDestroyBuffer(VulkanContext::GetDevice().getVmaAllocator(), stagingBuffer, stagingAllocation);
 }
 
-void VulkanVertexBuffer::cleanup() noexcept
+void VulkanBuffer::cleanup() noexcept
 {
     VulkanContext::GetLogicalDevice().waitIdle();
     vmaDestroyBuffer(VulkanContext::GetDevice().getVmaAllocator(), m_buffer, m_allocation);
 }
 
-std::uint32_t VulkanVertexBuffer::findMemoryType(std::uint32_t typeFilter, vk::MemoryPropertyFlags properties)
+std::uint32_t VulkanBuffer::findMemoryType(std::uint32_t typeFilter, vk::MemoryPropertyFlags properties)
 {
     vk::PhysicalDeviceMemoryProperties memoryProperties = VulkanContext::GetPhysicalDevice().getMemoryProperties();
     for (std::uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++)
@@ -199,4 +195,21 @@ std::uint32_t VulkanVertexBuffer::findMemoryType(std::uint32_t typeFilter, vk::M
     }
 
     throw std::runtime_error("Failed to find suitable memory type!");
+}
+
+
+// ------------ VulkanVertexBuffer ------------
+
+VulkanVertexBuffer::VulkanVertexBuffer(const std::vector<VulkanVertex>& vertices)
+    : VulkanBuffer(vertices.data(), vertices.size() * sizeof(VulkanVertex), vk::BufferUsageFlagBits::eVertexBuffer)
+{
+    m_vertexCount = vertices.size();
+}
+
+// ------------ VulkanIndexBuffer ------------
+
+VulkanIndexBuffer::VulkanIndexBuffer(const std::vector<uint16_t> indices)
+    : VulkanBuffer(indices.data(), indices.size() * sizeof(VulkanIndexBuffer::IndexType), vk::BufferUsageFlagBits::eIndexBuffer)
+{
+    m_indexCount = indices.size();
 }

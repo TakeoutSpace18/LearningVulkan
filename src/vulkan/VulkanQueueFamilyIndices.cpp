@@ -29,7 +29,7 @@ VulkanQueueFamilyIndices VulkanQueueFamilyIndices::FindQueueFamilies(const vk::P
 
         vk::Bool32 presentSupport = false;
         const vk::Result result = device.getSurfaceSupportKHR(i, surface, &presentSupport);
-        vk::resultCheck(result, "Failed to check physical device present support!");
+        vk::detail::resultCheck(result, "Failed to check physical device present support!");
 
         if (presentSupport)
         {

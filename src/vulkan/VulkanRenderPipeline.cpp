@@ -2,10 +2,10 @@
 
 #include <fstream>
 #include <ios>
+#include <vulkan/vulkan_enums.hpp>
 
 #include "VulkanContext.h"
-#include "VulkanQueueFamilyIndices.h"
-#include "VulkanVertexBuffer.h"
+#include "VulkanBuffers.h"
 
 void VulkanRenderPipeline::createPipeline()
 {
@@ -345,7 +345,7 @@ void VulkanRenderPipeline::recordCommandBuffer(vk::CommandBuffer commandBuffer, 
         .resolveImageLayout = vk::ImageLayout::eUndefined,
         .loadOp = vk::AttachmentLoadOp::eClear,
         .storeOp = vk::AttachmentStoreOp::eStore,
-        .clearValue = vk::ClearColorValue(std::array{0.0f, 0.0f, 0.0f, 0.0f})
+        .clearValue = { vk::ClearColorValue(std::array{0.0f, 0.0f, 0.0f, 0.0f}) }
     };
 
     const vk::Extent2D swapchainExtent = VulkanContext::GetSwapchain().getExtent();
@@ -387,14 +387,22 @@ void VulkanRenderPipeline::recordCommandBuffer(vk::CommandBuffer commandBuffer, 
 
     commandBuffer.setScissor(0, 1, &scissor);
 
-    static VulkanVertexBuffer vertexBuffer = {{
-        {{0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}},
-        {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-        {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
-    }};
+    static VulkanVertexBuffer vertexBuffer = {
+        {
+            {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+            {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+            {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+            {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+        }
+    };
 
+    static VulkanIndexBuffer indexBuffer = {
+        {0, 1, 2, 2, 3, 0}
+    };
+    
     commandBuffer.bindVertexBuffers(0, {vertexBuffer.getHandle()}, {0});
-    commandBuffer.draw(vertexBuffer.getVertexCount(), 1, 0, 0);
+    commandBuffer.bindIndexBuffer(indexBuffer.getHandle(), 0, indexBuffer.getIndexType());
+    commandBuffer.drawIndexed(indexBuffer.getIndexCount(), 1, 0, 0, 0);
 
     commandBuffer.endRendering();
 
